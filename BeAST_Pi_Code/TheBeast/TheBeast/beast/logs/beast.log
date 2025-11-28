@@ -1,0 +1,122 @@
+2025-11-27 18:06:19,099 - BeAST - INFO - Configuration loaded from /home/pibeast/Downloads/TheBeast/TheBeast/beast/config.yaml
+2025-11-27 18:06:19,099 - BeAST - INFO - ============================================================
+2025-11-27 18:06:19,099 - BeAST - INFO - BeAST System Initializing...
+2025-11-27 18:06:19,099 - BeAST - INFO - ============================================================
+2025-11-27 18:06:19,099 - BeAST - INFO - Initializing Text-to-Speech...
+2025-11-27 18:06:19,100 - BeAST.TTS - INFO - Using default output device: 'default'
+2025-11-27 18:06:19,100 - BeAST.TTS - WARNING - Piper not available, falling back
+2025-11-27 18:06:19,100 - BeAST.TTS - INFO - TTS initialized with engine: system
+2025-11-27 18:06:19,100 - BeAST.Announcer - INFO - Announcing: BeAST system starting up. Please wait.
+2025-11-27 18:06:19,100 - BeAST.TTS - INFO - Speaking: BeAST system starting up. Please wait....
+2025-11-27 18:06:19,100 - BeAST.TTS - ERROR - TTS error: [Errno 2] No such file or directory: 'festival'
+Traceback (most recent call last):
+  File "/home/pibeast/Downloads/TheBeast/TheBeast/beast/voice/text_to_speech.py", line 199, in speak
+    self._speak_system(text, blocking)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/home/pibeast/Downloads/TheBeast/TheBeast/beast/voice/text_to_speech.py", line 336, in _speak_system
+    subprocess.run(cmd, capture_output=True)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/subprocess.py", line 554, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/subprocess.py", line 1039, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        pass_fds, cwd, env,
+                        ^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+                        gid, gids, uid, umask,
+                        ^^^^^^^^^^^^^^^^^^^^^^
+                        start_new_session, process_group)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/subprocess.py", line 1972, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'festival'
+2025-11-27 18:06:19,105 - BeAST.TTS - ERROR - All TTS methods failed
+2025-11-27 18:06:19,105 - BeAST - INFO - Initializing Speech-to-Text...
+2025-11-27 18:06:19,105 - BeAST - ERROR - Initialization failed: No STT engine available!
+Traceback (most recent call last):
+  File "/home/pibeast/Downloads/TheBeast/TheBeast/beast/main.py", line 125, in initialize
+    self.stt = SpeechToText(self.config['voice']['stt'])
+               ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pibeast/Downloads/TheBeast/TheBeast/beast/voice/speech_to_text.py", line 95, in __init__
+    self._init_engine()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/pibeast/Downloads/TheBeast/TheBeast/beast/voice/speech_to_text.py", line 121, in _init_engine
+    raise RuntimeError("No STT engine available!")
+RuntimeError: No STT engine available!
+2025-11-27 18:06:19,106 - BeAST.Announcer - INFO - Announcing: BeAST initialization failed. Please check logs.
+2025-11-27 18:06:19,106 - BeAST.TTS - INFO - Speaking: BeAST initialization failed. Please check logs....
+2025-11-27 18:06:19,106 - BeAST.TTS - ERROR - TTS error: [Errno 2] No such file or directory: 'festival'
+Traceback (most recent call last):
+  File "/home/pibeast/Downloads/TheBeast/TheBeast/beast/main.py", line 125, in initialize
+    self.stt = SpeechToText(self.config['voice']['stt'])
+               ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pibeast/Downloads/TheBeast/TheBeast/beast/voice/speech_to_text.py", line 95, in __init__
+    self._init_engine()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/pibeast/Downloads/TheBeast/TheBeast/beast/voice/speech_to_text.py", line 121, in _init_engine
+    raise RuntimeError("No STT engine available!")
+RuntimeError: No STT engine available!
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/pibeast/Downloads/TheBeast/TheBeast/beast/voice/text_to_speech.py", line 199, in speak
+    self._speak_system(text, blocking)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/home/pibeast/Downloads/TheBeast/TheBeast/beast/voice/text_to_speech.py", line 336, in _speak_system
+    subprocess.run(cmd, capture_output=True)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/subprocess.py", line 554, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/subprocess.py", line 1039, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        pass_fds, cwd, env,
+                        ^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+                        gid, gids, uid, umask,
+                        ^^^^^^^^^^^^^^^^^^^^^^
+                        start_new_session, process_group)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/subprocess.py", line 1972, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'festival'
+2025-11-27 18:06:19,109 - BeAST.TTS - ERROR - All TTS methods failed
+2025-11-27 18:06:19,109 - BeAST - ERROR - Failed to initialize. Exiting.
+2025-11-27 19:13:11,584 - BeAST - INFO - Configuration loaded from /home/pibeast/Downloads/TheBeast/TheBeast/beast/config.yaml
+2025-11-27 19:13:11,584 - BeAST - INFO - ============================================================
+2025-11-27 19:13:11,584 - BeAST - INFO - BeAST System Initializing...
+2025-11-27 19:13:11,584 - BeAST - INFO - ============================================================
+2025-11-27 19:13:11,584 - BeAST - INFO - Initializing Text-to-Speech...
+2025-11-27 19:13:11,584 - BeAST.TTS - INFO - Using default output device: 'default'
+2025-11-27 19:13:11,584 - BeAST.TTS - INFO - TTS initialized with engine: none
+2025-11-27 19:13:11,585 - BeAST.Announcer - INFO - Announcing: BeAST system starting up. Please wait.
+2025-11-27 19:13:11,585 - BeAST.TTS - INFO - Speaking: BeAST system starting up. Please wait....
+2025-11-27 19:13:42,802 - BeAST - INFO - Received signal 2, shutting down...
+2025-11-27 19:13:42,812 - BeAST - INFO - Initializing Speech-to-Text...
+2025-11-27 19:13:42,812 - BeAST.STT - INFO - Loading Vosk model: /home/pibeast/models/vosk-model-small-en-us-0.15
+2025-11-27 19:13:42,814 - BeAST.STT - ERROR - Failed to load Vosk: Failed to create a model
+2025-11-27 19:13:42,815 - BeAST - ERROR - Initialization failed: Failed to create a model
+Traceback (most recent call last):
+  File "/home/pibeast/Downloads/TheBeast/TheBeast/beast/main.py", line 125, in initialize
+    self.stt = SpeechToText(self.config['voice']['stt'])
+               ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pibeast/Downloads/TheBeast/TheBeast/beast/voice/speech_to_text.py", line 95, in __init__
+    self._init_engine()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/pibeast/Downloads/TheBeast/TheBeast/beast/voice/speech_to_text.py", line 119, in _init_engine
+    self._init_vosk()
+    ~~~~~~~~~~~~~~~^^
+  File "/home/pibeast/Downloads/TheBeast/TheBeast/beast/voice/speech_to_text.py", line 170, in _init_vosk
+    self._vosk_model = VoskModel(str(model_path))
+                       ~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/pibeast/Downloads/TheBeast/venv/lib/python3.13/site-packages/vosk/__init__.py", line 57, in __init__
+    raise Exception("Failed to create a model")
+Exception: Failed to create a model
+2025-11-27 19:13:42,817 - BeAST.Announcer - INFO - Announcing: BeAST initialization failed. Please check logs.
+2025-11-27 19:13:42,817 - BeAST.TTS - INFO - Speaking: BeAST initialization failed. Please check logs....
+2025-11-27 19:13:47,135 - BeAST - INFO - Received signal 2, shutting down...
+2025-11-27 19:13:47,142 - BeAST - ERROR - Failed to initialize. Exiting.

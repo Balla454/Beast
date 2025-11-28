@@ -1,0 +1,6 @@
+# This directory stores AI models
+# Subdirectories:
+# - tts/: Text-to-speech models (Piper ONNX files)
+# - stt/: Speech-to-text models (Whisper, Vosk)
+# - rag/: LLM models (Gemma 2B)
+# - embeddings/: Sentence transformer models

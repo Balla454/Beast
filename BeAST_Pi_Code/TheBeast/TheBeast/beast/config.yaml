@@ -1,0 +1,131 @@
+# BeAST System Configuration
+# ===========================
+# All paths use environment variables or relative paths.
+# Set BEAST_HOME to override the base directory (defaults to script location).
+#
+# Environment variables:
+#   BEAST_HOME       - Base directory for all relative paths
+#   BEAST_DATA_DIR   - Data directory (default: $BEAST_HOME/data)
+#   BEAST_MODELS_DIR - Models directory (default: $BEAST_HOME/models)
+#   BEAST_LOG_DIR    - Logs directory (default: $BEAST_HOME/logs)
+#   BEAST_CONFIG     - Path to this config file
+
+system:
+  name: "BeAST"
+  version: "2.0.0"
+  device: "pi5-16gb"
+  
+paths:
+  # Relative paths - will be resolved relative to BEAST_HOME or script location
+  # Use environment variables to override: BEAST_DATA_DIR, BEAST_MODELS_DIR, etc.
+  data_dir: "data"
+  models_dir: "models"
+  database: "data/beast_local.db"
+  user_baseline: "data/user_baseline.json"
+  backup_log: "logs/backup.log"
+
+# PostgreSQL Database (Antonio's schema)
+# Schema defined in: Database for Antonio/beast_schema.sql
+database:
+  host: "localhost"           # PostgreSQL host (or set BEAST_DB_HOST)
+  port: 5432                  # PostgreSQL port (or set BEAST_DB_PORT)
+  database: "beast"           # Database name (or set BEAST_DB_NAME)
+  user: "beast"               # Database user (or set BEAST_DB_USER)
+  password: ""                # Set BEAST_DB_PASSWORD env var for security
+  # Optional: filter by device/session
+  device_id: null             # UUID or null for all devices
+  session_id: null            # UUID or null for all sessions
+
+voice:
+  wake_word: "beast"
+  wake_word_sensitivity: 0.5
+  
+  # Speech-to-Text
+  stt:
+    engine: "none"  # whisper, moonshine, or vosk
+    model: ""   # faster-whisper-tiny.en (English, CPU optimized)
+    language: "en"
+    input_device: null  # null = auto-detect USB mic, or specify device index
+    
+  # Text-to-Speech  
+  tts:
+    engine: "none"  # piper or espeak
+    model: ""
+    model_path: ""  # Relative to BEAST_HOME, or set PIPER_MODEL_PATH
+    rate: 1.0
+    output_device: null  # null = auto-detect USB speaker, or specify device index
+    
+  # Audio settings
+  audio:
+    sample_rate: 16000
+    channels: 1
+    chunk_size: 1024
+    silence_threshold: 500
+    silence_duration: 1.5  # seconds of silence to end recording
+
+rag:
+  # Embedding model for semantic search
+  embedding_model: "all-MiniLM-L6-v2"
+  
+  # LLM via Ollama (recommended)
+  llm:
+    # Ollama settings (preferred)
+    ollama_url: "http://localhost:11434"  # Or set OLLAMA_HOST
+    ollama_model: "gemma2:2b"  # Google Gemma 2 2B
+    
+    # Fallback: Local model path (if Ollama not available)
+    model_path: "models/gemma-2b"  # Relative to BEAST_HOME
+    
+    # Generation settings
+    max_context_chars: 800
+    max_new_tokens: 100
+    temperature: 0.7
+    
+  # Knowledge base
+  knowledge:
+    cache_dir: "data/cache"  # Relative to BEAST_HOME
+    top_k_results: 3
+
+sensors:
+  # Enable/disable sensor types
+  enabled:
+    eeg: true
+    ppg: true
+    imu: true
+    temp: true
+    bioz: true
+    
+  # Sampling rates (Hz)
+  sampling_rates:
+    eeg: 250
+    ppg: 100
+    imu: 500
+    temp: 0.2
+    bioz: 800
+    
+  # Processing window (samples)
+  window_size: 500
+  process_interval: 1.0  # seconds
+
+metrics:
+  # Zone thresholds for alerts
+  alert_zones:
+    cognitive_load: 80
+    fatigue: 70
+    stress: 75
+    attention: 30  # Alert if below this
+    
+  # Announce alerts via TTS
+  voice_alerts: false
+
+backup:
+  remote_user: ""  # Set BEAST_BACKUP_USER
+  remote_host: ""  # Set BEAST_BACKUP_HOST
+  remote_path: ""  # Set BEAST_BACKUP_PATH
+  max_local_backups: 3
+
+logging:
+  level: "INFO"
+  file: "logs/beast.log"  # Relative to BEAST_HOME
+  max_size_mb: 10
+  backup_count: 3
