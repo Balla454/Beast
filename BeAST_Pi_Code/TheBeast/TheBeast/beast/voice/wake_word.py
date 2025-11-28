@@ -17,6 +17,7 @@ import struct
 import numpy as np
 from typing import Optional, Callable
 from pathlib import Path
+from scipy import signal as scipy_signal
 
 logger = logging.getLogger('BeAST.WakeWord')
 
@@ -79,10 +80,16 @@ class WakeWordDetector:
         self.running = False
         self.audio = None
         self.stream = None
+        self.input_device = None  # Will be auto-detected
         
         # Audio parameters
-        self.sample_rate = 16000
+        self.sample_rate = 16000  # Target sample rate for processing
+        self.hardware_sample_rate = 44100  # Hardware recording rate (mic supports 44100-96000)
         self.frame_length = 512  # ~32ms at 16kHz
+        self.hardware_frame_length = int(self.frame_length * self.hardware_sample_rate / self.sample_rate)
+        
+        # Find USB microphone
+        self._find_usb_microphone()
         
         # Select engine
         if engine == "auto":
@@ -177,6 +184,34 @@ class WakeWordDetector:
         # Not true wake word detection, but works as placeholder
         self._energy_threshold = 500  # Adjust based on environment
         logger.info("Using simple energy-based voice detection")
+    
+    def _find_usb_microphone(self):
+        """Find USB microphone device index"""
+        if not PYAUDIO_AVAILABLE:
+            return
+            
+        try:
+            audio = pyaudio.PyAudio()
+            usb_keywords = ['usb', 'USB', 'Headset', 'headset', 'Microphone', 'microphone', 'JLAB']
+            
+            for i in range(audio.get_device_count()):
+                try:
+                    info = audio.get_device_info_by_index(i)
+                    name = info.get('name', '')
+                    max_inputs = info.get('maxInputChannels', 0)
+                    
+                    if max_inputs > 0:
+                        if any(kw in name for kw in usb_keywords):
+                            logger.info(f"Found USB microphone: '{name}' (index {i})")
+                            self.input_device = i
+                            audio.terminate()
+                            return
+                except Exception:
+                    continue
+            
+            audio.terminate()
+        except Exception as e:
+            logger.error(f"Error scanning audio devices: {e}")
         
     def _init_audio(self):
         """Initialize PyAudio stream"""
@@ -187,13 +222,33 @@ class WakeWordDetector:
             self.audio = pyaudio.PyAudio()
             
         if self.stream is None or not self.stream.is_active():
-            self.stream = self.audio.open(
-                rate=self.sample_rate,
-                channels=1,
-                format=pyaudio.paInt16,
-                input=True,
-                frames_per_buffer=self.frame_length
-            )
+            # Record at hardware-supported rate (44100 Hz), will resample to 16kHz
+            # Use 2 channels since the JLAB mic is stereo
+            stream_kwargs = {
+                'rate': self.hardware_sample_rate,
+                'channels': 2,  # Stereo - mic requires 2 channels
+                'format': pyaudio.paInt16,
+                'input': True,
+                'frames_per_buffer': self.hardware_frame_length
+            }
+            
+            if self.input_device is not None:
+                stream_kwargs['input_device_index'] = self.input_device
+                logger.info(f"Using audio input device index: {self.input_device}")
+            
+            self.stream = self.audio.open(**stream_kwargs)
+            
+    def _resample_audio(self, pcm_data):
+        """Resample audio from hardware rate to processing rate"""
+        # Convert to numpy array if not already
+        if isinstance(pcm_data, np.ndarray):
+            audio_np = pcm_data.astype(np.float32)
+        else:
+            audio_np = np.array(pcm_data, dtype=np.float32)
+        # Resample from 44100 to 16000 Hz
+        num_samples = int(len(audio_np) * self.sample_rate / self.hardware_sample_rate)
+        resampled = scipy_signal.resample(audio_np, num_samples)
+        return resampled.astype(np.int16)
             
     def listen_for_wake_word(self, timeout: float = None) -> bool:
         """
@@ -216,9 +271,17 @@ class WakeWordDetector:
                 if timeout and (time.time() - start_time) > timeout:
                     return False
                 
-                # Read audio frame
-                pcm = self.stream.read(self.frame_length, exception_on_overflow=False)
-                pcm_data = struct.unpack_from(f"{self.frame_length}h", pcm)
+                # Read audio frame at hardware sample rate (stereo)
+                pcm = self.stream.read(self.hardware_frame_length, exception_on_overflow=False)
+                # Stereo has 2x samples (left + right interleaved)
+                pcm_data = struct.unpack_from(f"{self.hardware_frame_length * 2}h", pcm)
+                
+                # Convert stereo to mono by averaging channels
+                pcm_array = np.array(pcm_data, dtype=np.float32)
+                pcm_mono = (pcm_array[0::2] + pcm_array[1::2]) / 2  # Average L+R channels
+                
+                # Resample to 16kHz for processing
+                pcm_data = self._resample_audio(pcm_mono)
                 
                 # Check for wake word based on engine
                 if self._check_wake_word(pcm_data):

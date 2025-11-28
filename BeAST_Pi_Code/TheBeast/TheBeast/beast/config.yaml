@@ -42,15 +42,15 @@ voice:
   
   # Speech-to-Text
   stt:
-    engine: "none"  # whisper, moonshine, or vosk
-    model: ""   # faster-whisper-tiny.en (English, CPU optimized)
+    engine: "whisper"  # whisper, moonshine, or vosk
+    model: "openai/whisper-tiny.en"   # Whisper tiny English model
     language: "en"
     input_device: null  # null = auto-detect USB mic, or specify device index
     
   # Text-to-Speech  
   tts:
-    engine: "none"  # piper or espeak
-    model: ""
+    engine: "espeak"  # piper or espeak
+    model: "en"
     model_path: ""  # Relative to BEAST_HOME, or set PIPER_MODEL_PATH
     rate: 1.0
     output_device: null  # null = auto-detect USB speaker, or specify device index

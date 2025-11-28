@@ -288,10 +288,14 @@ class TextToSpeech:
         """Speak using eSpeak"""
         cmd = ['espeak', '-v', 'en', '-s', str(int(150 * self.rate)), text]
         
-        if blocking:
-            subprocess.run(cmd, capture_output=True)
-        else:
-            subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Run with a timeout to prevent hanging
+        try:
+            result = subprocess.run(cmd, capture_output=True, timeout=60)
+            logger.debug(f"espeak completed with return code {result.returncode}")
+        except subprocess.TimeoutExpired:
+            logger.warning("espeak timed out after 60 seconds")
+        except Exception as e:
+            logger.error(f"espeak error: {e}")
             
     def _speak_transformers(self, text: str, blocking: bool = True):
         """Speak using transformers TTS pipeline"""
