@@ -1,0 +1,4 @@
+# This directory stores BeAST data files
+# - beast_local.db: SQLite database with metrics and health records
+# - *.jsonl: Raw sensor data streams
+# - session_*.json: Session metadata

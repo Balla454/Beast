@@ -1,0 +1,285 @@
+﻿Data Collection Parameters
+
+
+Data sampling frequencies and modes by each sensor:
+
+
+Multiple type of sampling will be utilized depending upon circumstances:
+* Normal Operation (NO): majority of time operations
+* Event Triggered (ET):  Certain events will trigger different sensors that rise above a threshold to elevate their sampling frequency to monitor these sensors or other sensor data points until the causing threshold is no longer elevated and all systems are within normative and safe levels.
+* BeAST-Med (BM): This mode will be engaged by medics upon arrival to an injured warfighter. This mode will monitor data points at an elevated frequency until this mode is disengaged.
+
+
+PPG (HR, BP*, HRV, SpO2): 
+        Sensor: MAX32664GWEC+, MAXM86161, KXTJ3-1057
+NO: Burst sample for 30 second intervals at 100 Hz, every 5 mins
+ET: Triggered event increases sampling to every 1 minute, 100 Hz during these elevated timeframes (i.e. an elevated Overpressure event, core temperature is elevated, BP drops, SpO2 < 85) 
+BM: every 1 min for 30 sec intervals.
+
+
+Core Temperature (IR): 
+        Sensor: MLX90632SLD-DCB-000-SP
+NM: Once every 5 mins, single data point averaged by sensor
+ET: Once every 1 min (Events triggering: Core temp elevated >100F, ambient temp > 110)
+BM: Once every 1 min
+
+
+IMU (Acceleration X (Low G accelerometer), Acceleration Y (Low G accelerometer), Acceleration Z (Low G accelerometer), Acceleration X (High G accelerometer), Acceleration Y (High G accelerometer), Acceleration z (High G accelerometer), Gyro X, Gyro Y, Gyro Z, Step Counter, Tilt Detection, Free Fall Detection, Wake-Up Detection, Activity Detection):
+        Sensor: LSM6DSV320X
+NM: Continuous when motion is detected.  Frequency 500 Hz 
+ET:  if no activity is detected by Activity or Free Fall flag, then we will monitor this flag (every 5 sec) until activity is identified and set the sampling back to NM mode OR if the Overpressure elevated event occurs. (Need to check if it actively throws detection data flags upon internal detection??)
+BM: same as NM
+
+
+EEG (16 channels total, 2 ear wearables with 8 channels each):
+        Sensor: Gold contacts, ADS1299
+NM: 3 sec Bursts  every 5 sec every (with Bioimpedance alternated every 30 sec) . 250 Hz during data collection frequency. 
+ET: Will be prioritized during elevated event thresholds such as Overpressure, HR and elevated brain activity stressors events and threshold detections.
+BM: same as NM
+
+
+Bioimpedance (16 channels total, 2 ear wearables with 8 channels each):
+        Sensor: Gold Contacts, MAX30001
+NM: 5 sec Bursts at 800 Hz collection frequency.  Gaps of 500 ms between testing frequency current changes utilized. 4 current frequencies used: 1kHz, 10 Khz, 50 kHz and 100 kHz.  
+ET: May be deprioritized if key trigger puts priority on EEG event threshold detection.
+BM: same as NM
+
+
+Ambient Temperature:
+        Sensor: SHT45-AD1B-R3
+NM: Once every 5 mins
+ET: no change
+BM: no change
+
+
+Humidity: 
+        Sensor: SHT45-AD1B-R3
+NM: Once every 5 mins
+ET: no change
+BM: no change
+
+
+Noise:
+        Sensor: MAX98090
+NM: Once every 30 sec unless noise threshold exceeded and then registers the elevated noise level (sample for 3 seconds and take highest level for peak registered level)
+ET: Sampled when a registered elevated level such as when there is a Overpressure event threshold detection.
+BM: same as NM
+
+
+Phase 2
+
+
+Overpressure:
+        Sensor: PCB 132B38, ADC121C021CIMK/NOPB
+NM: Constant sleep mode with waiting for triggering event >= 1 psi (6.9 kPa)
+ET: Once Overpressure detected above 1 psi, goes into 100KHz sampling mode for 2 seconds.
+BM: same as NM
+
+
+CBNR:
+Sensor: (individual sensors not yet determined for each)
+NM: Once every 3 mins, burst sample for 5 sec at 100 Hz
+ET: If elevated thresholds for any CBNE, then put into an elevated sampling frequency of every 1 min
+BM: If system elevated previously maintain ET mode, otherwise NM
+
+
+
+
+Data durations per warfighter:
+
+
+Data is intended to be collected for up to 72 hours to collect during full missions or training events.  Certain sensors will be in sleep mode until key thresholds or other sensor events are detected.
+
+
+Data is analyzed and evaluated via EDGE computing locally and stored onboard.
+Data evaluation provides alerts and cautions to warfighter based upon the following areas:
+Operational Readiness evaluation areas:
+
+
+* Alertness
+* Readiness
+* Cognitive Load
+* Fatigue
+* Tiredness
+* Biometric evaluations elevated and abnormal based upon medical normative values and changes to warfighter baseline levels. Or levels that alert the warfighter to simple mitigation strategies could be exercised to achieve safer levels.
+* Elevated environmental variables or accumulations of exposures that would put a warfighter in jeopardy for injury, medical issues/concerns or safety.  Or levels that alert the warfighter to simple mitigation strategies could be exercised to achieve safer levels.
+
+
+Operational Context: 
+1. Types of Missions:
+   1. Military training (shooting, ordinance training, physical activity, shoot houses, door breaches, etc.)
+   2. Special forces missions
+   3. Duty missions (pilots, divers, boat operators, military advancements, jumpers, flyers, etc.)
+   4. For b and c, these would be in no-RF signature environments, and no GPS or jammed areas.  Environments can be indoors or outdoors.
+
+
+2. Movement expectations
+   1. Walking, running, jumping, landing, climbing
+   2. Standing, prone(side, front or back), kneeling, sitting
+   3. Parachuting, riding a boat, riding in military vehicles, flying, diving, scuba diving
+
+
+3. Realtime evaluation:
+   1. Evaluate operational readiness and sustainment continually
+   2. Create alerts and awareness to operation readiness challenged areas
+   3. Create alerts to environmental and biometric challenged levels and accumulations
+   4. Respond to warfighter inquiries for data updates and scenario operational requests (i.e. levels for next operational state needs, etc) 
+
+
+4. Post-mission analysis
+   1. Data will be uploaded to the database for more advanced evaluation and longitudinal data trends and accumulation evaluations.  
+   2. Data from training can be evaluated to assess Operational Readiness prior to mission deployment or for additional training to attain and optimize Operation Readiness.
+   3. Command and Unit leadership can review and evaluate operational mission loads and warfighter levels
+   4. Medics can utilize data for constant monitoring of casualties upon arrival at injured warfighters, for triage needs during treatment phase, during evacuation, transmitting of full data set and history to medical personnel and upon arrival at a medical facility.
+
+
+5. Target latency for BeAST communications:
+   1. Responses to warfighters should be within 1-2 seconds
+   2. Alerts/Cautions should be within 3-5 seconds 
+
+
+6. Feedback Parameters:
+   1. Accumulation of Loads: when the loads hit or exceed thresholds that are determined in Database for their demographic group (safety levels, health levels, rising changes…).
+   2. Triggering Events: When certain events’ load levels are exceeded (safety, max levels, medically dangerous) from other sensors, then we want to give them feedback of the situation and elements of their data the warfighter  needs to pay attention to.
+   3. Responses to warfighter enquiries:  Respond to the warfighter request for insights with data supported results, current levels, trends, state levels and general information.
+
+
+Output Requirements:
+1. Primary End Users: Real-time, in ear feedback and ask/responses.  Individual dashboards of all longitudinal data, as well as comparative capabilities to anonymous group, demographic group filtered and normative/standardized data.
+2. Secondary End Users: (Command, Medical, Performance and Leadership personnel) Group and Individual warfighter dashboards of current session and multi-session longitudinal data, as well as comparative capabilities to anonymous group, demographic group filtered and normative/standardized data.  For environments where RF signatures are permitted, real-time data is available on a group/individual dashboard platform.
+3. Impact - Types of Decisions from these assessments:
+   1. Load monitoring of all sensors - understanding of the unique types of loads, strains, accumulation, levels
+   2. Biometric - ensuring wellness data is safe and within normative ranges. 
+   3. Causative sensor monitoring - environmental sensor data that can impact operational status and biometric wellness
+   4. Early warning systems for emergency and performance degradation
+   5. Evaluation of different state levels through fused multi-modal sensor data and inferred data from research models:
+      1. Cognitive Load
+      2. Fatigue
+      3. Alertness
+      4. Tiredness
+      5. Reactions
+      6. Operational Readiness
+      7. Stress
+      8. TBI/Concussion detection
+      9. Heat illness
+      10. Hydration
+4. Types of Assessments: 
+   1. Individual: Evaluation of warfighter wearing the BeAST unit.
+   2. Unit-Level: Team summary and individual data pages of all in the unit, as well as average load reporting and visualizations as to warfighters worst level of data indicating an issue, or trends of positive trends or negative trends of key states of each warfighter.
+
+
+Technical Infrastructure:
+1. Python code is preferred
+2. We are doing mostly Edge computing onboard our isolated system (no internet connection from the sensors, but onboard our CPU/GPU)
+3. We are setting up ML models 
+4. We are setting up isolated RAG within our AI core
+5. We have experts in developing ML and AI for onboard our isolated cores and for development from our database
+6. Need some simple rule-based approach, specifically for levels of data evaluation that would indicate safety, medically problematic or danger issues to generate severity of Alerts and Cautions. 
+
+
+Validation & Ground Truth:
+1. We will be researching published and validated science to find key performance metrics in each of the baseline areas (that we can find such on).
+2. Military standards:  We will look to find key military research and policy on any data points metrics and standards that are currently in use, to use as thresholds.  We hope that our ML may improve this research and update such metrics/standards.
+3. We intend to validate our sensor’s core measured data against industry gold standard measurements. 
+
+
+Individual Baselines:
+
+
+We will have baselines available from the Db on each individual, and can push these from the Db to the device memory for comparisons to samples sensor data.  
+
+
+We can also do a calibration that will gather a small sample burst of data and evaluate the average baselines during this period of time.
+
+
+Calibration:
+
+
+We can run a calibration in the form of a small burst of time gathering data from all biometric sensors to average out through this timeframe to establish a recent baseline set of data points for this individual.
+
+
+Calibration will be initiated through a set of prompts heard in the device once it is put on and has a few minutes to stabilize.  If the individual does not request a calibration, an auto prompt will be generated to the individual to initiate the calibration process.
+
+
+Abnormal Situation
+
+
+Adjustment
+Putting on
+Thoughts:
+Core Temp - EEG contacts (1,2,3) not in contact  and IMU movement detected - CT data may not be reliable (confidence level is down) ML
+Motion artifact vs Motion Identification (running, walking, jumping, free fall, falling, ….)
+
+
+Calibration process:
+
+
+* Standing (prompt)
+* Head facing forward and top of head upwards vertically
+* Arms down and at their side
+* User says “Calibrate the BeAST”
+* Audio, asks the user to stay still, motionless and not talking for 5 seconds. The system will monitor all IMU data for stability and minimal motion and then sample for a burst all biometric sensors.  If motion is still detected, the system will prompt again for stillness and try again for calibration.
+* BeAST unit will say “Calibration done” at the end.  User is free to move at this point. The system is then ready and into full operations and data collection.
+ 
+
+
+Data Clean Up:
+
+
+Many of the sensors have an IMU onboard and have a feature to automatically adjust and clean the data for motion artifacts.
+We will also smooth data through appropriate filtering based upon best research-based normative practices.
+All data will be aligned based upon the time-stamps and spaced out for different frequencies used for individual sensor sampling.
+
+
+Data Analysis
+1. Each warfighter will have a set of their individual baseline data uploaded to the unit for many of the sensors.  It will be used to evaluate their respective change in data from their own baseline. 
+2. Each individual sensor’s data will be collected, cleaned and analyzed based upon the key elements that their data related to:
+* Motion Tracking (distances, speed, accelerations, decelerations)
+* EEG (brain states)
+* Core Temp (thermal safety)
+* Noise (sounds impacting  hearing)
+* PPG (cardio vascular readings for health)
+* Bioimpedance (health and hydration)
+* Overpressure (blast levels)
+
+
+3. Data Fusion.  Multi-modal sensors data sets will be fused together to provide better accuracy, understanding of causation and impact by environment and biometric data triggers, and give new research insight to the key elements of warfighter readiness, loads, negative issue states, declining states and overall wellness through training, daily life, missions, deployments and into veteran life. 
+
+
+
+
+Data Storage
+
+
+Data will be analyzed and aligned with all raw data.  Data will be stored locally in JSON file format in the BeAST unit local memory equivalent to upto 72 hrs of Event Level elevated data collection.
+
+
+When the warfighter returns to a computer-available environment, the unit will be connected via USB-C to a computer and the data will be uploaded to the BeAST cloud database for more advanced analysis, multi-session data analysis and longitudinal trends and research..
+
+
+Data Dashboards 
+
+
+There will be dashboards that will be available to key stakeholders for on-going evaluation and context to additional collected data sets and diagnosis from the warfighter, medical and psychological professionals:
+
+
+Warfighter Dashboard 
+        Evaluation of loads, states and biometrics to aid with recovery, wellness, changes experiences, injuries, development and preparedness over multiple and individual sessions..
+
+
+Leadership/Group Dashboards
+
+
+Evaluation of individual and group loads, cause and effect implications, training load management, planning, evaluation of readiness, and evaluation of multiple days of training or missions.
+
+
+Machine Learning
+
+
+Machine learning will be used to help with sensor accuracies and to ensure that the data fusion models are optimized for each key element being evaluated.
+
+
+AI
+
+
+AI will be used to assist with making determinations and provide feedback on any data set or fused data state to bring key research interpretation, mitigation modalities, appropriate levels for warfighter safety and readiness, and to ensure all insights can be actionable and understandable for overall warfighter development, health, wellness, readiness, safety, skills development, and monitoring of all multi-modal data.

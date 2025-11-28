@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BeAST Control Panel</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+        }
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .connected {
+            background: #4CAF50;
+            color: white;
+        }
+        .disconnected {
+            background: #f44336;
+            color: white;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 30px 0;
+        }
+        button {
+            padding: 20px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .btn-l1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-l2 {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        .btn-l3 {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        .btn-stop {
+            background: #f44336;
+            color: white;
+            grid-column: span 2;
+        }
+        .log {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #4CAF50;
+            padding-left: 10px;
+        }
+        .log-error {
+            border-left-color: #f44336;
+        }
+        .log-command {
+            border-left-color: #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧠 BeAST Control Panel</h1>
+    
+    <div id="status" class="status disconnected">
+        ● DISCONNECTED
+    </div>
+    
+    <div class="controls">
+        <button class="btn-l1" onclick="sendCommand('L1')">
+            📊 Mode L1<br>
+            <small>EEG Raw (12 channels)</small>
+        </button>
+        <button class="btn-l2" onclick="sendCommand('L2')">
+            📈 Mode L2<br>
+            <small>EEG Bands (5 bands)</small>
+        </button>
+        <button class="btn-l3" onclick="sendCommand('L3')">
+            🎯 Mode L3<br>
+            <small>Clinical Full</small>
+        </button>
+        <button class="btn-stop" onclick="sendCommand('S')">
+            ⏹️ STOP
+        </button>
+    </div>
+    
+    <h3>📝 Activity Log:</h3>
+    <div id="log" class="log"></div>
+    
+    <script>
+        let ws = null;
+        let connected = false;
+        
+        function connect() {
+            ws = new WebSocket('ws://192.168.68.26:8765');
+            
+            ws.onopen = () => {
+                connected = true;
+                document.getElementById('status').className = 'status connected';
+                document.getElementById('status').textContent = '● CONNECTED';
+                addLog('✅ Connected to BeAST service');
+            };
+            
+            ws.onclose = () => {
+                connected = false;
+                document.getElementById('status').className = 'status disconnected';
+                document.getElementById('status').textContent = '● DISCONNECTED';
+                addLog('❌ Disconnected from service', 'error');
+                
+                // Retry connection after 3 seconds
+                setTimeout(connect, 3000);
+            };
+            
+            ws.onerror = (error) => {
+                addLog('⚠️ WebSocket error', 'error');
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'command_ack') {
+                        addLog(`✅ Command acknowledged: ${data.command}`, 'command');
+                    } else if (data.type === 'command_sent') {
+                        addLog(`📤 Command sent to Arduino: ${data.command}`, 'command');
+                    } else if (data.type === 'data_batch') {
+                        addLog(`📊 Data batch received (${data.batch.length} packets)`);
+                    } else if (data.type === 'connected') {
+                        addLog(`💬 ${data.message}`);
+                    }
+                } catch (e) {
+                    console.error('Parse error:', e);
+                }
+            };
+        }
+        
+        function sendCommand(command) {
+            if (!connected) {
+                addLog('⚠️ Not connected! Cannot send command', 'error');
+                return;
+            }
+            
+            addLog(`🎮 Sending command: ${command}`, 'command');
+            
+            ws.send(JSON.stringify({
+                command: command
+            }));
+        }
+        
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry' + (type !== 'info' ? ' log-' + type : '');
+            
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        // Connect on page load
+        connect();
+    </script>
+</body>
+</html>

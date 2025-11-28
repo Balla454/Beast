@@ -1,0 +1,45 @@
+# BeAST Systemd Service Template
+# ===============================
+# Copy to /etc/systemd/system/beast.service after customizing paths
+# Or run scripts/setup.sh which will generate this automatically
+#
+# Usage:
+#   sudo systemctl enable beast
+#   sudo systemctl start beast
+#   sudo systemctl status beast
+#   journalctl -u beast -f
+
+[Unit]
+Description=BeAST Wearable AI System
+After=network.target sound.target
+
+[Service]
+Type=simple
+User=%u
+WorkingDirectory=%h/beast
+
+# Environment variables - customize these paths as needed
+# Or set them in /etc/environment or ~/.bashrc
+Environment="PATH=%h/beast/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="BEAST_HOME=%h/beast"
+Environment="BEAST_DATA_DIR=%h/beast/data"
+Environment="BEAST_MODELS_DIR=%h/beast/models"
+Environment="BEAST_LOG_DIR=%h/beast/logs"
+Environment="BEAST_CONFIG=%h/beast/config.yaml"
+
+# Optionally load from environment file
+EnvironmentFile=-%h/beast/.env
+
+ExecStart=%h/beast/.venv/bin/python3 %h/beast/main.py
+Restart=always
+RestartSec=10
+
+# Audio access
+SupplementaryGroups=audio
+
+# Logging (uses BEAST_LOG_DIR from environment)
+StandardOutput=append:%h/beast/logs/beast.log
+StandardError=append:%h/beast/logs/beast_error.log
+
+[Install]
+WantedBy=multi-user.target

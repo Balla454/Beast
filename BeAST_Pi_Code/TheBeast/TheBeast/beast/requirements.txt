@@ -1,0 +1,46 @@
+# BeAST Requirements
+# Raspberry Pi 5 Edge Deployment
+# ================================
+
+# Core
+numpy>=1.24.0
+scipy>=1.10.0
+pyyaml>=6.0
+
+# Audio
+sounddevice>=0.4.6
+soundfile>=0.12.0
+pyaudio>=0.2.13
+webrtcvad>=2.0.10
+
+# Speech-to-Text
+# Uses: faster-whisper-tiny.en (English, CPU optimized)
+# Model downloads automatically on first use
+faster-whisper>=0.10.0
+
+# Text-to-Speech
+# Requires: espeak-ng installed on system
+#   macOS: brew install espeak espeak-ng
+#   Linux: sudo apt install espeak espeak-ng
+piper-tts>=1.2.0
+
+# ML / AI
+torch>=2.0.0
+transformers>=4.35.0
+sentence-transformers>=2.2.0
+faiss-cpu>=1.7.4
+
+# Database
+psycopg2-binary>=2.9.0  # PostgreSQL (Antonio's schema)
+# Note: sqlite3 is built into Python
+
+# Utilities
+pathlib>=1.0.1
+
+# Optional: Wake word detection
+# pvporcupine>=2.1.0  # Requires access key from Picovoice
+
+# Development (not needed in production)
+# pytest>=7.0.0
+# black>=23.0.0
+# mypy>=1.0.0

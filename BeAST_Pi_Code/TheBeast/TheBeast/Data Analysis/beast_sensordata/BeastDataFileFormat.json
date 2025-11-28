@@ -1,0 +1,99 @@
+/*
+* High Level Example Format
+* timestamp: integer [year,month,day,hour,minute,second]
+* side: string // left, right
+* device: 
+*		name: string ["mcu","temp","imu","ppg","eeg","bioz"]
+* 		status: string ["halt","sleep","active","err0","err3","err2"]
+* 		data: // device dependant
+* 		
+* **NOTE**
+* This is a basic sample of what the data will look like coming from the earpiece
+* to the compute unit. This is not concrete or necessarily complete, values can be
+* added, moved, changed etc.
+*
+* "time" - This is the timestamp from the MCU when the data was collected.
+* "side" - Which earpiece the data was collected from.
+* "device" - A specific class or data which is device dependant.
+* 		"name" - Device label to tell the compute unit the specific sensor the data was
+* 			collected from.
+*		"status" - Indicates the current status of the sensor at time of collection.
+*			Even if this particular sensor wasn't actively collecting data, it would
+*			hold the most recent value from it's last collection. Error codes are 
+*		"freq" - Current sensor sample rate.
+*		"data" - This is the device specific data. These values or format can change
+* 			if we need depending on serveral factors.
+*/
+{
+	"time": [2025,9,30,20,34,57],
+	"side": "left",
+	"device": {
+		"name": "mcu",
+		"status": "active",
+		"freq": 1.0,
+		"data": [0,1,2,3]	//TODO mcu specific values
+	},
+	"device": {
+		"name": "temp",
+		"status": "halt",
+		"freq": 0.2,
+		"data": [37.12,32.33]	//body temp,ambient temp
+	},
+	"device": {
+		"name": "imu",
+		"status": "sleep",
+		"freq": 500.0,
+		"data": [0.443,0.762,0.924]	//x,y,y accel
+	},
+	"device": {
+		"name": "ppg",
+		"status": "sleep",
+		"freq": 100.0,
+		"data": [67,98]	//heart rate,blood oxygen
+	},
+	"device": {
+		"name": "bioz",
+		"status": "sleep",
+		"freq": 800.0,
+		"data": [134.5]	//in kOhms
+	},
+	"device": {
+		"name": "eeg",
+		"status": "active",
+		"freq": 250.0,
+		"data": {
+			"channel": {
+				"number": 1,
+				"set": [30,31,44,35,31,38,28,27,46,44,44,27,29,44,38,34,40,29,35,32,29,43,38,29,34,36,44,32,40,47,28,46,29,39,40,32,32,29,42,41,36,40,27,46,39,44,35,31,36,43,29,31,48,42,27,29,46,35,27,48,46,48,41,35,40,45,29,32,29,39,38,47,45,30,29,27,46,34,42,43,45,41,44,27,37,33,36,47,40,32,44,47,47,28,46,38,32,45,32,26,47,39,32,45,47,32,33,45,32,29,45,34,29,40,42,33,43,37,44,26,34,35,33,30,34,45,39,33,47,36],	//in mV, set size needs to be configured/tested in order to collect enough data. Can be in the hundreds.
+			},
+			"channel": {
+				"number": 2,
+				"set": [43,35,39,31,29,26,44,28,33,33,26,29,27,44,35,47,28,30,41,46,28,39,43,44,28,40,42,38,27,43,32,44,47,33,42,43,44,42,47,45,38,27,44,38,34,31,45,29,45,42,41,32,41,42,48,27,38,37,30,47,34,39,37,41,36,39,44,37,44,38,32,41,33,30,43,27,33,26,44,27,29,39,44,27,26,27,45,47,41,28,48,45,31,39,28,42,40,32,29,29,29,30,27,38,37,34,37,45,44,42,31,34,32,30,31,27,39,29,39,47,33,39,40,32,37,34,47,35,35,48],	//in mV, set size needs to be configured/tested in order to collect enough data. Can be in the hundreds.
+			},
+			"channel": {
+				"number": 3,
+				"set": [36,28,39,48,28,37,48,27,40,37,40,26,32,39,30,47,30,26,36,31,39,48,48,30,28,28,43,34,43,42,41,29,39,32,35,44,42,44,43,48,32,39,42,38,35,47,40,31,32,34,37,30,34,31,35,36,26,37,42,28,29,34,27,37,30,48,48,45,48,41,44,42,43,42,41,26,36,34,48,28,33,46,29,46,27,27,30,34,46,34,47,35,31,39,42,38,42,46,38,42,42,42,35,48,42,39,37,45,29,46,48,33,41,48,27,30,41,37,35,29,39,32,26,37,29,44,33,48,35,26],	//in mV, set size needs to be configured/tested in order to collect enough data. Can be in the hundreds.
+			},
+			"channel": {
+				"number": 4,
+				"set": [47,44,45,26,44,43,44,29,46,44,31,42,32,39,37,29,45,37,44,42,43,31,47,35,44,42,38,30,39,46,45,30,45,37,43,38,31,30,48,29,45,44,34,26,46,33,28,39,26,40,44,37,37,33,48,27,45,41,29,26,35,43,37,45,39,43,30,36,28,33,41,33,27,42,39,27,44,46,28,31,28,43,42,48,43,26,35,47,35,46,32,31,27,33,45,32,43,34,33,43,32,42,48,43,26,34,39,46,46,30,34,36,31,47,35,32,38,32,26,45,46,47,27,48,41,45,29,37,37,34],	//in mV, set size needs to be configured/tested in order to collect enough data. Can be in the hundreds.
+			},
+			"channel": {
+				"number": 5,
+				"set": [34,37,31,43,44,38,37,45,39,32,31,38,30,28,40,37,41,27,35,40,43,26,33,48,35,45,39,34,45,26,40,29,35,33,30,31,46,30,40,38,27,28,46,43,26,43,41,40,32,30,36,47,36,41,31,34,38,30,36,30,42,41,33,40,34,28,44,32,32,32,30,35,27,48,27,46,33,38,42,40,28,39,42,28,30,29,44,30,37,31,43,30,45,44,40,28,42,32,39,31,39,42,30,30,33,28,26,45,36,42,34,35,39,44,29,28,29,46,47,26,30,42,40,47,28,33,31,39,30,37],	//in mV, set size needs to be configured/tested in order to collect enough data. Can be in the hundreds.
+			},
+			"channel": {
+				"number": 6,
+				"set": [26,40,39,36,26,28,41,33,46,31,35,27,35,27,28,35,28,35,38,27,27,39,30,46,40,36,38,39,37,41,27,27,37,35,28,27,42,46,34,31,30,36,44,29,39,43,34,32,45,46,41,46,26,40,38,44,33,39,37,28,46,27,42,39,31,45,28,27,46,27,46,40,44,44,48,36,41,46,43,32,34,43,39,29,28,39,47,35,37,48,37,36,46,39,47,41,48,45,38,35,41,30,37,39,31,37,30,42,31,39,43,39,45,32,45,47,29,32,34,44,38,38,38,47,45,28,27,48,31,34],	//in mV, set size needs to be configured/tested in order to collect enough data. Can be in the hundreds.
+			},
+			"channel": {
+				"number": 7,
+				"set": [47,34,31,36,45,48,40,37,42,28,39,28,26,28,26,33,26,45,47,45,42,27,39,39,41,31,48,47,35,32,39,45,48,42,29,39,26,46,29,26,39,47,48,33,28,35,27,47,41,36,47,26,31,42,26,29,28,27,48,39,46,48,35,32,30,48,32,41,37,33,30,26,41,32,27,44,40,33,31,32,38,27,37,32,34,36,40,48,43,40,34,42,32,37,26,32,34,43,47,29,38,33,42,27,37,48,40,38,41,42,31,37,36,29,40,44,43,36,39,40,44,47,42,32,28,42,32,38,27,34],	//in mV, set size needs to be configured/tested in order to collect enough data. Can be in the hundreds.
+			},
+			"channel": {
+				"number": 8,
+				"set": [46,38,48,42,41,47,33,46,43,47,38,46,48,27,39,33,38,44,40,36,43,46,26,30,38,36,26,33,28,35,47,30,46,47,42,43,45,44,41,36,31,38,37,26,38,38,39,44,48,46,46,46,37,43,37,35,28,43,41,44,26,47,41,32,34,33,34,45,33,36,43,37,30,48,30,42,38,31,37,35,36,46,26,30,36,37,35,33,48,41,40,28,27,46,47,43,36,44,43,40,29,36,26,39,39,34,46,28,41,40,36,44,45,35,26,36,46,31,27,48,31,37,28,27,41,37,47,36,31,34]	//in mV, set size needs to be configured/tested in order to collect enough data. Can be in the hundreds.
+			}
+		}
+	}
+}
