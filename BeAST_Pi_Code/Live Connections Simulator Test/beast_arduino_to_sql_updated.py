@@ -26,7 +26,7 @@ DB_HOST = os.getenv("BEAST_DB_HOST", "localhost")
 DB_PORT = int(os.getenv("BEAST_DB_PORT", "5432"))
 DB_NAME = os.getenv("BEAST_DB_NAME", "beast")
 DB_USER = os.getenv("BEAST_DB_USER", "beast")
-DB_PASS = os.getenv("BEAST_DB_PASSWORD", "")  # set via env, or leave blank if .pgpass is used
+DB_PASS = os.getenv("BEAST_DB_PASSWORD", "beast")  # default password for beast user
 
 
 def wipe_tables():
@@ -241,7 +241,20 @@ def main():
     # 1) Wipe DB tables for a fresh session
     wipe_tables()
 
-    # 2) Connect to Arduino and start live stream
+    # 2) Connect to PostgreSQL for live inserts
+    print("Connecting to PostgreSQL for live inserts...")
+    pg_conn = psycopg2.connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        dbname=DB_NAME,
+        user=DB_USER,
+        password=DB_PASS,
+    )
+    pg_conn.autocommit = True
+    pg_cursor = pg_conn.cursor()
+    print("✅ PostgreSQL connected for live inserts")
+
+    # 3) Connect to Arduino and start live stream
     print(f"Connecting to Arduino on {SERIAL_PORT} @ {BAUD_RATE} baud...")
     ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
 
@@ -254,7 +267,7 @@ def main():
     ser.flush()
 
     session_id, device_id = new_ids()
-    ...
+    insert_count = 0
 
     outfile_name = f"session_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.sql"
     outfile_path = OUTPUT_DIR / outfile_name
@@ -286,12 +299,22 @@ def main():
                         insert_sql = build_insert(pkt, session_id, device_id)
                         if insert_sql:
                             f.write(insert_sql + "\n")
+                            # Also insert directly into PostgreSQL
+                            try:
+                                pg_cursor.execute(insert_sql)
+                                insert_count += 1
+                                if insert_count % 10 == 0:
+                                    print(f"✅ Inserted {insert_count} records into PostgreSQL")
+                            except Exception as e:
+                                print(f"⚠️ DB insert error: {e}")
 
         except KeyboardInterrupt:
-            print("Session ended by user.\n")
+            print(f"\nSession ended by user. Total inserts: {insert_count}\n")
 
         f.write("\nCOMMIT;\n")
 
+    pg_cursor.close()
+    pg_conn.close()
     print(f"Session SQL saved: {outfile_path}")
 
 if __name__ == "__main__":

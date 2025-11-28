@@ -49,9 +49,9 @@ voice:
     
   # Text-to-Speech  
   tts:
-    engine: "espeak"  # piper or espeak
-    model: "en"
-    model_path: ""  # Relative to BEAST_HOME, or set PIPER_MODEL_PATH
+    engine: "piper"  # piper or espeak
+    model: "en_US-lessac-medium"
+    model_path: "models/tts"  # Relative to BEAST_HOME
     rate: 1.0
     output_device: null  # null = auto-detect USB speaker, or specify device index
     

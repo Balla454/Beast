@@ -82,13 +82,14 @@ class WakeWordDetector:
         self.stream = None
         self.input_device = None  # Will be auto-detected
         
-        # Audio parameters
+        # Audio parameters (defaults, will be updated by _find_usb_microphone)
         self.sample_rate = 16000  # Target sample rate for processing
-        self.hardware_sample_rate = 44100  # Hardware recording rate (mic supports 44100-96000)
+        self.hardware_sample_rate = 16000  # Hardware recording rate (auto-detected)
+        self.channels = 1  # Mono by default (auto-detected)
         self.frame_length = 512  # ~32ms at 16kHz
-        self.hardware_frame_length = int(self.frame_length * self.hardware_sample_rate / self.sample_rate)
+        self.hardware_frame_length = self.frame_length  # Will be adjusted if resampling needed
         
-        # Find USB microphone
+        # Find USB microphone and detect its capabilities
         self._find_usb_microphone()
         
         # Select engine
@@ -182,34 +183,80 @@ class WakeWordDetector:
         """Initialize simple energy-based detection (always listens)"""
         # This is a fallback that just detects when someone speaks
         # Not true wake word detection, but works as placeholder
-        self._energy_threshold = 500  # Adjust based on environment
-        logger.info("Using simple energy-based voice detection")
+        # Higher threshold = less sensitive (requires louder speech)
+        self._energy_threshold = 1500  # Increased to reduce false triggers
+        self._consecutive_frames = 3  # Require multiple loud frames in a row
+        self._loud_frame_count = 0
+        logger.info(f"Using simple energy-based voice detection (threshold: {self._energy_threshold})")
     
     def _find_usb_microphone(self):
-        """Find USB microphone device index"""
+        """Find USB microphone device index and detect its capabilities"""
         if not PYAUDIO_AVAILABLE:
             return
             
         try:
             audio = pyaudio.PyAudio()
-            usb_keywords = ['usb', 'USB', 'Headset', 'headset', 'Microphone', 'microphone', 'JLAB']
+            usb_keywords = ['usb', 'USB', 'Headset', 'headset', 'Microphone', 'microphone', 'JLAB', 'Logi']
             
             for i in range(audio.get_device_count()):
                 try:
                     info = audio.get_device_info_by_index(i)
                     name = info.get('name', '')
                     max_inputs = info.get('maxInputChannels', 0)
+                    default_rate = int(info.get('defaultSampleRate', 44100))
                     
                     if max_inputs > 0:
                         if any(kw in name for kw in usb_keywords):
                             logger.info(f"Found USB microphone: '{name}' (index {i})")
+                            logger.info(f"  Channels: {max_inputs}, Default rate: {default_rate}")
                             self.input_device = i
+                            
+                            # Auto-detect capabilities
+                            # Logitech headsets support 16kHz mono directly
+                            # JLAB requires 44100Hz stereo
+                            if 'Logi' in name or 'logi' in name:
+                                # Logitech supports 16kHz mono - optimal!
+                                self.hardware_sample_rate = 16000
+                                self.channels = 1
+                                self.hardware_frame_length = self.frame_length
+                                logger.info(f"  Using direct 16kHz mono (no resampling needed)")
+                            elif max_inputs == 1:
+                                # Mono mic - try 16kHz first
+                                self.channels = 1
+                                # Test if 16kHz is supported
+                                try:
+                                    test_stream = audio.open(
+                                        format=pyaudio.paInt16,
+                                        channels=1,
+                                        rate=16000,
+                                        input=True,
+                                        input_device_index=i,
+                                        frames_per_buffer=512,
+                                        start=False
+                                    )
+                                    test_stream.close()
+                                    self.hardware_sample_rate = 16000
+                                    self.hardware_frame_length = self.frame_length
+                                    logger.info(f"  Using direct 16kHz mono")
+                                except:
+                                    self.hardware_sample_rate = 44100
+                                    self.hardware_frame_length = int(self.frame_length * 44100 / 16000)
+                                    logger.info(f"  Using 44100Hz mono with resampling")
+                            else:
+                                # Stereo mic (like JLAB)
+                                self.channels = 2
+                                self.hardware_sample_rate = 44100
+                                self.hardware_frame_length = int(self.frame_length * 44100 / 16000)
+                                logger.info(f"  Using 44100Hz stereo with resampling")
+                            
                             audio.terminate()
                             return
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Error checking device {i}: {e}")
                     continue
             
             audio.terminate()
+            logger.warning("No USB microphone found, using default")
         except Exception as e:
             logger.error(f"Error scanning audio devices: {e}")
         
@@ -222,11 +269,10 @@ class WakeWordDetector:
             self.audio = pyaudio.PyAudio()
             
         if self.stream is None or not self.stream.is_active():
-            # Record at hardware-supported rate (44100 Hz), will resample to 16kHz
-            # Use 2 channels since the JLAB mic is stereo
+            # Use auto-detected sample rate and channels
             stream_kwargs = {
                 'rate': self.hardware_sample_rate,
-                'channels': 2,  # Stereo - mic requires 2 channels
+                'channels': self.channels,
                 'format': pyaudio.paInt16,
                 'input': True,
                 'frames_per_buffer': self.hardware_frame_length
@@ -234,7 +280,7 @@ class WakeWordDetector:
             
             if self.input_device is not None:
                 stream_kwargs['input_device_index'] = self.input_device
-                logger.info(f"Using audio input device index: {self.input_device}")
+                logger.info(f"Using audio device {self.input_device}: {self.hardware_sample_rate}Hz, {self.channels}ch")
             
             self.stream = self.audio.open(**stream_kwargs)
             
@@ -271,17 +317,26 @@ class WakeWordDetector:
                 if timeout and (time.time() - start_time) > timeout:
                     return False
                 
-                # Read audio frame at hardware sample rate (stereo)
+                # Read audio frame
                 pcm = self.stream.read(self.hardware_frame_length, exception_on_overflow=False)
-                # Stereo has 2x samples (left + right interleaved)
-                pcm_data = struct.unpack_from(f"{self.hardware_frame_length * 2}h", pcm)
                 
-                # Convert stereo to mono by averaging channels
-                pcm_array = np.array(pcm_data, dtype=np.float32)
-                pcm_mono = (pcm_array[0::2] + pcm_array[1::2]) / 2  # Average L+R channels
+                # Handle based on channels and sample rate
+                if self.channels == 2:
+                    # Stereo: unpack 2x samples (left + right interleaved)
+                    pcm_data = struct.unpack_from(f"{self.hardware_frame_length * 2}h", pcm)
+                    # Convert stereo to mono by averaging channels
+                    pcm_array = np.array(pcm_data, dtype=np.float32)
+                    pcm_mono = (pcm_array[0::2] + pcm_array[1::2]) / 2
+                else:
+                    # Mono: unpack directly
+                    pcm_data = struct.unpack_from(f"{self.hardware_frame_length}h", pcm)
+                    pcm_mono = np.array(pcm_data, dtype=np.float32)
                 
-                # Resample to 16kHz for processing
-                pcm_data = self._resample_audio(pcm_mono)
+                # Resample if needed (skip if already at 16kHz)
+                if self.hardware_sample_rate != self.sample_rate:
+                    pcm_data = self._resample_audio(pcm_mono)
+                else:
+                    pcm_data = pcm_mono.astype(np.int16)
                 
                 # Check for wake word based on engine
                 if self._check_wake_word(pcm_data):
@@ -319,10 +374,16 @@ class WakeWordDetector:
             energy = np.sqrt(np.mean(np.array(pcm_data, dtype=np.float32) ** 2))
             
             if energy > self._energy_threshold:
-                # Voice activity detected - treat as wake word for simple mode
-                # Wait a bit to ensure it's sustained speech
-                time.sleep(0.1)
-                return True
+                # Count consecutive loud frames to avoid noise triggers
+                self._loud_frame_count += 1
+                if self._loud_frame_count >= self._consecutive_frames:
+                    # Sustained loud audio detected - treat as wake word
+                    self._loud_frame_count = 0
+                    logger.debug(f"Wake triggered (energy: {energy:.0f})")
+                    return True
+            else:
+                # Reset counter on quiet frame
+                self._loud_frame_count = 0
             return False
             
     def start_continuous(self, callback: Callable[[], None]):
