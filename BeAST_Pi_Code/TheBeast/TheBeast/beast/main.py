@@ -172,8 +172,13 @@ class BeASTSystem:
                 logger.debug("Listening for wake word...")
                 
                 if self.wake_detector.listen_for_wake_word():
-                    # Wake word detected
+                    # Wake word detected - close stream to release mic (but don't terminate PyAudio)
                     logger.info("Wake word detected!")
+                    if self.wake_detector.stream:
+                        self.wake_detector.stream.stop_stream()
+                        self.wake_detector.stream.close()
+                        self.wake_detector.stream = None
+                    
                     self.announcer.play_sound("listening")  # Short beep
                     
                     # Step 2: Record user's question
@@ -209,6 +214,16 @@ class BeASTSystem:
                     
                     # Log interaction to database
                     self.db.log_interaction(question, response)
+                    
+                    # Close all audio resources to release the microphone
+                    if self.stt.audio:
+                        self.stt.audio.terminate()
+                        self.stt.audio = None
+                    
+                    # Also close wake word audio so it can reinitialize fresh
+                    if self.wake_detector.audio:
+                        self.wake_detector.audio.terminate()
+                        self.wake_detector.audio = None
                     
                     logger.info("Interaction complete. Returning to listening...")
                     

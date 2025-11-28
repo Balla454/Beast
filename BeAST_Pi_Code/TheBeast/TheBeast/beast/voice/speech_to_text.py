@@ -20,6 +20,7 @@ import numpy as np
 from pathlib import Path
 from typing import Optional, Union
 import io
+from scipy import signal as scipy_signal
 
 logger = logging.getLogger('BeAST.STT')
 
@@ -83,9 +84,11 @@ class SpeechToText:
         self.language = config.get('language', 'en')
         
         # Audio settings
-        self.sample_rate = 16000
-        self.channels = 1
+        self.sample_rate = 16000  # Target sample rate for processing
+        self.hardware_sample_rate = 44100  # Hardware recording rate (mic supports 44100-96000)
+        self.channels = 2  # Stereo - JLAB mic requires 2 channels
         self.chunk_size = 1024
+        self.hardware_chunk_size = int(self.chunk_size * self.hardware_sample_rate / self.sample_rate)
         
         # Audio device (None = default, or specify device index)
         self.input_device = config.get('input_device', None)
@@ -269,12 +272,13 @@ class SpeechToText:
             self.audio = pyaudio.PyAudio()
             
         # Open stream with specific device if found
+        # Use hardware sample rate (44100 Hz) since mic doesn't support 16kHz
         stream_kwargs = {
             'format': pyaudio.paInt16,
             'channels': self.channels,
-            'rate': self.sample_rate,
+            'rate': self.hardware_sample_rate,
             'input': True,
-            'frames_per_buffer': self.chunk_size
+            'frames_per_buffer': self.hardware_chunk_size
         }
         
         if self.input_device is not None:
@@ -297,8 +301,8 @@ class SpeechToText:
                     logger.warning("Max recording duration reached")
                     break
                     
-                # Read audio chunk
-                data = stream.read(self.chunk_size, exception_on_overflow=False)
+                # Read audio chunk at hardware sample rate
+                data = stream.read(self.hardware_chunk_size, exception_on_overflow=False)
                 frames.append(data)
                 
                 # Calculate RMS energy
@@ -329,9 +333,16 @@ class SpeechToText:
             logger.warning("No speech detected in recording")
             return None
             
-        # Convert to numpy array
+        # Convert to numpy array (stereo)
         audio_bytes = b''.join(frames)
-        audio_array = np.frombuffer(audio_bytes, dtype=np.int16)
+        audio_array = np.frombuffer(audio_bytes, dtype=np.int16).astype(np.float32)
+        
+        # Convert stereo to mono by averaging left and right channels
+        audio_mono = (audio_array[0::2] + audio_array[1::2]) / 2
+        
+        # Resample from hardware rate (44100 Hz) to processing rate (16000 Hz)
+        num_samples = int(len(audio_mono) * self.sample_rate / self.hardware_sample_rate)
+        audio_array = scipy_signal.resample(audio_mono, num_samples).astype(np.int16)
         
         logger.info(f"Recorded {len(audio_array) / self.sample_rate:.1f} seconds")
         
