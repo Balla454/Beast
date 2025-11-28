@@ -38,17 +38,23 @@ FAISS_AVAILABLE = False
 PSYCOPG2_AVAILABLE = False
 OLLAMA_AVAILABLE = False
 
+# Force offline mode for HuggingFace
+import os
+os.environ['HF_HUB_OFFLINE'] = '1'
+os.environ['TRANSFORMERS_OFFLINE'] = '1'
+
+# Check if Ollama is running locally (no network required)
 try:
-    import requests
-    # Check if ollama is running
-    try:
-        resp = requests.get("http://localhost:11434/api/tags", timeout=2)
-        if resp.status_code == 200:
-            OLLAMA_AVAILABLE = True
-            logger.info("Ollama available")
-    except:
-        pass
-except ImportError:
+    import socket
+    # Check if Ollama is listening on localhost:11434
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(1)
+    result = sock.connect_ex(('127.0.0.1', 11434))
+    sock.close()
+    if result == 0:
+        OLLAMA_AVAILABLE = True
+        logger.info("Ollama available (local)")
+except Exception:
     pass
 
 try:
@@ -159,13 +165,16 @@ class HealthRAG:
             
         db_config = self.config.get('database', {})
         
+        # Get password from env var first, then config
+        db_password = os.environ.get('BEAST_DB_PASSWORD', db_config.get('password', ''))
+        
         try:
             self.pg_conn = psycopg2.connect(
-                host=db_config.get('host', 'localhost'),
-                port=db_config.get('port', 5432),
-                database=db_config.get('database', 'beast'),
-                user=db_config.get('user', 'beast'),
-                password=db_config.get('password', ''),
+                host=os.environ.get('BEAST_DB_HOST', db_config.get('host', 'localhost')),
+                port=int(os.environ.get('BEAST_DB_PORT', db_config.get('port', 5432))),
+                database=os.environ.get('BEAST_DB_NAME', db_config.get('database', 'beast')),
+                user=os.environ.get('BEAST_DB_USER', db_config.get('user', 'beast')),
+                password=db_password,
                 connect_timeout=5
             )
             self.pg_conn.autocommit = True
@@ -175,39 +184,31 @@ class HealthRAG:
             self.pg_conn = None
         
     def _load_embedder(self):
-        """Load sentence embedding model"""
+        """Load sentence embedding model (offline mode)"""
         model_name = self.config.get('embedding_model', 'all-MiniLM-L6-v2')
         
         try:
-            logger.info(f"Loading embedding model: {model_name}")
-            self.embedder = SentenceTransformer(model_name)
-            logger.info("Embedding model loaded")
+            logger.info(f"Loading embedding model: {model_name} (local/offline)")
+            # Load from cache only - don't download
+            self.embedder = SentenceTransformer(model_name, device='cpu')
+            logger.info("Embedding model loaded (offline)")
         except Exception as e:
             logger.error(f"Failed to load embedder: {e}")
+            logger.error("Make sure the model is cached. Run once with internet to download.")
             
     def _load_llm(self):
-        """Load language model for generation - prefer Ollama with gemma2:2b"""
+        """Load language model for generation - prefer Ollama with gemma2:2b (offline)"""
         llm_config = self.config.get('llm', {})
         
-        # Prefer Ollama with gemma2:2b
+        # Prefer Ollama with gemma2:2b (runs locally, no internet needed)
         if OLLAMA_AVAILABLE:
             self.ollama_model = llm_config.get('ollama_model', 'gemma2:2b')
             self.ollama_url = llm_config.get('ollama_url', 'http://localhost:11434')
             
-            # Verify model is available
-            try:
-                import requests
-                resp = requests.get(f"{self.ollama_url}/api/tags", timeout=5)
-                if resp.status_code == 200:
-                    models = [m.get('name', '') for m in resp.json().get('models', [])]
-                    if any(self.ollama_model in m for m in models):
-                        logger.info(f"Using Ollama with model: {self.ollama_model}")
-                        return
-                    else:
-                        logger.warning(f"Model {self.ollama_model} not found in Ollama. Available: {models}")
-                        logger.info(f"Pull it with: ollama pull {self.ollama_model}")
-            except Exception as e:
-                logger.warning(f"Ollama check failed: {e}")
+            # Just use Ollama - models are already pulled locally
+            # No need to verify via HTTP, the socket check confirmed it's running
+            logger.info(f"Using Ollama with model: {self.ollama_model} (local/offline)")
+            return
                 
         # Fallback to local model path
         model_path = llm_config.get('model_path', '')
@@ -235,18 +236,9 @@ class HealthRAG:
             except Exception as e:
                 logger.error(f"Failed to load local LLM: {e}")
                 
-        # Fall back to small model or rule-based
-        try:
-            logger.info("Loading small generation model...")
-            self.generator = pipeline(
-                "text-generation",
-                model="microsoft/DialoGPT-small",
-                device=-1  # CPU
-            )
-            logger.info("DialoGPT loaded")
-        except Exception as e:
-            logger.warning(f"Could not load generation model: {e}")
-            logger.info("Will use rule-based responses")
+        # Fall back to rule-based responses (no model download)
+        logger.warning("No LLM available - using rule-based responses")
+        logger.info("To enable LLM: start Ollama with 'ollama serve' and pull a model")
             
     def _load_knowledge_base(self):
         """Load health knowledge base"""

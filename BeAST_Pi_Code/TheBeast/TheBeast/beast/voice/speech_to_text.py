@@ -83,12 +83,12 @@ class SpeechToText:
         self.model_name = config.get('model', 'openai/whisper-tiny')
         self.language = config.get('language', 'en')
         
-        # Audio settings
+        # Audio settings (defaults - will be auto-detected by _find_usb_microphone)
         self.sample_rate = 16000  # Target sample rate for processing
-        self.hardware_sample_rate = 44100  # Hardware recording rate (mic supports 44100-96000)
-        self.channels = 2  # Stereo - JLAB mic requires 2 channels
+        self.hardware_sample_rate = 16000  # Hardware recording rate (auto-detected)
+        self.channels = 1  # Mono by default (auto-detected)
         self.chunk_size = 1024
-        self.hardware_chunk_size = int(self.chunk_size * self.hardware_sample_rate / self.sample_rate)
+        self.hardware_chunk_size = self.chunk_size  # Will be adjusted if resampling needed
         
         # Audio device (None = default, or specify device index)
         self.input_device = config.get('input_device', None)
@@ -100,7 +100,7 @@ class SpeechToText:
         # PyAudio
         self.audio = None
         
-        # Find USB microphone if not specified
+        # Find USB microphone if not specified (also detects capabilities)
         if self.input_device is None:
             self.input_device = self._find_usb_microphone()
         
@@ -124,18 +124,35 @@ class SpeechToText:
                 raise RuntimeError("No STT engine available!")
                 
     def _init_whisper(self):
-        """Initialize Whisper via transformers"""
-        logger.info(f"Loading Whisper model: {self.model_name}")
+        """Initialize Whisper via transformers (offline mode)"""
+        logger.info(f"Loading Whisper model: {self.model_name} (local/offline)")
+        
+        # Force offline mode - don't try to download anything
+        os.environ['HF_HUB_OFFLINE'] = '1'
+        os.environ['TRANSFORMERS_OFFLINE'] = '1'
         
         try:
-            self._model = pipeline(
-                "automatic-speech-recognition",
-                model=self.model_name,
-                device="cpu"  # Pi5 uses CPU
-            )
-            logger.info("Whisper model loaded successfully")
+            from transformers import WhisperForConditionalGeneration, WhisperProcessor
+            
+            # Try loading with local_files_only first
+            try:
+                self._model = pipeline(
+                    "automatic-speech-recognition",
+                    model=self.model_name,
+                    device="cpu",  # Pi5 uses CPU
+                    model_kwargs={"local_files_only": True}
+                )
+            except Exception:
+                # Fallback: try without local_files_only (uses cache)
+                self._model = pipeline(
+                    "automatic-speech-recognition",
+                    model=self.model_name,
+                    device="cpu"
+                )
+            logger.info("Whisper model loaded successfully (offline)")
         except Exception as e:
             logger.error(f"Failed to load Whisper: {e}")
+            logger.error("Make sure the model is cached. Run once with internet to download.")
             raise
             
     def _init_moonshine(self):
@@ -178,9 +195,10 @@ class SpeechToText:
             
     def _find_usb_microphone(self) -> Optional[int]:
         """
-        Find USB microphone device.
+        Find USB microphone device and detect its capabilities.
         
         Scans audio devices for USB audio input devices.
+        Also sets self.hardware_sample_rate and self.channels based on device.
         Returns device index or None for default.
         """
         if not PYAUDIO_AVAILABLE:
@@ -189,7 +207,7 @@ class SpeechToText:
         try:
             audio = pyaudio.PyAudio()
             
-            usb_keywords = ['usb', 'USB', 'Headset', 'headset', 'Microphone', 'microphone']
+            usb_keywords = ['usb', 'USB', 'Headset', 'headset', 'Microphone', 'microphone', 'Logi', 'JLAB']
             
             for i in range(audio.get_device_count()):
                 try:
@@ -201,11 +219,44 @@ class SpeechToText:
                     if max_inputs > 0:
                         # Check if it's a USB device
                         if any(kw in name for kw in usb_keywords):
-                            logger.info(f"Found USB microphone: '{name}' (index {i})")
+                            logger.info(f"Found USB microphone: '{name}' (index {i}, {max_inputs}ch)")
+                            
+                            # Auto-detect capabilities
+                            if 'Logi' in name or 'logi' in name:
+                                # Logitech supports 16kHz mono directly
+                                self.hardware_sample_rate = 16000
+                                self.channels = 1
+                                self.hardware_chunk_size = self.chunk_size
+                                logger.info(f"  Using direct 16kHz mono (optimal)")
+                            elif max_inputs == 1:
+                                # Mono mic - try 16kHz
+                                self.channels = 1
+                                try:
+                                    test_stream = audio.open(
+                                        format=pyaudio.paInt16, channels=1, rate=16000,
+                                        input=True, input_device_index=i,
+                                        frames_per_buffer=512, start=False
+                                    )
+                                    test_stream.close()
+                                    self.hardware_sample_rate = 16000
+                                    self.hardware_chunk_size = self.chunk_size
+                                    logger.info(f"  Using direct 16kHz mono")
+                                except:
+                                    self.hardware_sample_rate = 44100
+                                    self.hardware_chunk_size = int(self.chunk_size * 44100 / 16000)
+                                    logger.info(f"  Using 44100Hz mono with resampling")
+                            else:
+                                # Stereo mic (like JLAB)
+                                self.channels = 2
+                                self.hardware_sample_rate = 44100
+                                self.hardware_chunk_size = int(self.chunk_size * 44100 / 16000)
+                                logger.info(f"  Using 44100Hz stereo with resampling")
+                            
                             audio.terminate()
                             return i
                             
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Error checking device {i}: {e}")
                     continue
                     
             # If no USB device found, try to find any non-default input
@@ -271,8 +322,7 @@ class SpeechToText:
         if self.audio is None:
             self.audio = pyaudio.PyAudio()
             
-        # Open stream with specific device if found
-        # Use hardware sample rate (44100 Hz) since mic doesn't support 16kHz
+        # Open stream with auto-detected sample rate and channels
         stream_kwargs = {
             'format': pyaudio.paInt16,
             'channels': self.channels,
@@ -283,7 +333,7 @@ class SpeechToText:
         
         if self.input_device is not None:
             stream_kwargs['input_device_index'] = self.input_device
-            logger.info(f"Using audio input device index: {self.input_device}")
+            logger.info(f"Recording: device={self.input_device}, rate={self.hardware_sample_rate}, ch={self.channels}")
             
         stream = self.audio.open(**stream_kwargs)
         
@@ -301,7 +351,7 @@ class SpeechToText:
                     logger.warning("Max recording duration reached")
                     break
                     
-                # Read audio chunk at hardware sample rate
+                # Read audio chunk
                 data = stream.read(self.hardware_chunk_size, exception_on_overflow=False)
                 frames.append(data)
                 
@@ -333,16 +383,22 @@ class SpeechToText:
             logger.warning("No speech detected in recording")
             return None
             
-        # Convert to numpy array (stereo)
+        # Convert to numpy array
         audio_bytes = b''.join(frames)
         audio_array = np.frombuffer(audio_bytes, dtype=np.int16).astype(np.float32)
         
-        # Convert stereo to mono by averaging left and right channels
-        audio_mono = (audio_array[0::2] + audio_array[1::2]) / 2
+        # Convert stereo to mono if needed
+        if self.channels == 2:
+            audio_mono = (audio_array[0::2] + audio_array[1::2]) / 2
+        else:
+            audio_mono = audio_array
         
-        # Resample from hardware rate (44100 Hz) to processing rate (16000 Hz)
-        num_samples = int(len(audio_mono) * self.sample_rate / self.hardware_sample_rate)
-        audio_array = scipy_signal.resample(audio_mono, num_samples).astype(np.int16)
+        # Resample if needed (skip if already at 16kHz)
+        if self.hardware_sample_rate != self.sample_rate:
+            num_samples = int(len(audio_mono) * self.sample_rate / self.hardware_sample_rate)
+            audio_array = scipy_signal.resample(audio_mono, num_samples).astype(np.int16)
+        else:
+            audio_array = audio_mono.astype(np.int16)
         
         logger.info(f"Recorded {len(audio_array) / self.sample_rate:.1f} seconds")
         

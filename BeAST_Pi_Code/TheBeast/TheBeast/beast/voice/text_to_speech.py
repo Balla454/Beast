@@ -207,19 +207,44 @@ class TextToSpeech:
                 logger.error("All TTS methods failed")
                 
     def _clean_text(self, text: str) -> str:
-        """Clean text for TTS"""
+        """Clean text for TTS - remove special symbols that cause issues"""
+        import re
+        
         # Remove markdown formatting
         text = text.replace("**", "").replace("*", "")
         text = text.replace("#", "").replace("`", "")
         text = text.replace("\n\n", ". ").replace("\n", " ")
         
+        # Remove URLs
+        text = re.sub(r'https?://\S+', '', text)
+        
+        # Remove emojis and special unicode characters
+        text = re.sub(r'[^\x00-\x7F]+', ' ', text)
+        
+        # Remove special symbols that cause TTS issues
+        text = re.sub(r'[<>{}[\]|\\^~@#$%&*+=]', ' ', text)
+        
+        # Replace common symbols with words
+        text = text.replace("&", " and ")
+        text = text.replace("%", " percent ")
+        text = text.replace("+", " plus ")
+        text = text.replace("=", " equals ")
+        
+        # Keep basic punctuation: . , ! ? ' " - : ;
+        # Remove other punctuation
+        text = re.sub(r'[^\w\s.,!?\'\"-:;()]', ' ', text)
+        
         # Remove excessive whitespace
         text = " ".join(text.split())
+        
+        # Limit length to prevent very long responses
+        if len(text) > 500:
+            text = text[:500] + "..."
         
         return text.strip()
         
     def _speak_piper(self, text: str, blocking: bool = True):
-        """Speak using Piper TTS"""
+        """Speak using Piper TTS with USB headset output"""
         # Find model file
         model_file = self._find_piper_model()
         
@@ -227,75 +252,119 @@ class TextToSpeech:
             logger.warning("Piper model not found, falling back to espeak")
             self._speak_espeak(text, blocking)
             return
-            
-        # Generate audio with piper
-        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as f:
-            temp_path = f.name
-            
+        
         try:
-            # Run piper
-            cmd = [
+            # Pipe piper output directly to aplay on USB headset
+            # Piper outputs 22050 Hz mono audio
+            piper_cmd = [
                 'piper',
                 '--model', str(model_file),
-                '--output_file', temp_path
+                '--output-raw'
             ]
+            aplay_cmd = ['aplay', '-D', 'plughw:2,0', '-r', '22050', '-f', 'S16_LE', '-c', '1', '-q']
             
-            process = subprocess.Popen(
-                cmd,
+            # Run piper with text input, pipe to aplay
+            piper_proc = subprocess.Popen(
+                piper_cmd,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stderr=subprocess.DEVNULL
             )
+            aplay_proc = subprocess.Popen(
+                aplay_cmd,
+                stdin=piper_proc.stdout,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            piper_proc.stdout.close()
             
-            stdout, stderr = process.communicate(input=text.encode('utf-8'))
+            # Send text to piper
+            piper_proc.stdin.write(text.encode('utf-8'))
+            piper_proc.stdin.close()
             
-            if process.returncode != 0:
-                logger.error(f"Piper error: {stderr.decode()}")
-                raise RuntimeError("Piper failed")
-                
-            # Play the audio
-            self._play_audio_file(temp_path, blocking)
+            if blocking:
+                aplay_proc.wait(timeout=120)
             
-        finally:
-            # Cleanup
-            if os.path.exists(temp_path):
-                os.unlink(temp_path)
+            logger.debug("Piper TTS completed")
+            
+        except subprocess.TimeoutExpired:
+            logger.warning("Piper TTS timed out")
+        except Exception as e:
+            logger.error(f"Piper error: {e}")
+            # Fallback to espeak
+            self._speak_espeak(text, blocking)
                 
     def _find_piper_model(self) -> Optional[Path]:
         """Find Piper model file"""
-        # Check common locations (no hardcoded paths)
+        # Get BEAST_HOME directory (where main.py is)
+        beast_home = Path(__file__).parent.parent  # /beast/voice -> /beast
+        project_root = beast_home.parent  # /beast -> /TheBeast
+        
+        # Check common locations
         search_paths = [
+            # Project root models directory
+            project_root / "models" / "tts" / f"{self.model}.onnx",
+            # Relative to BEAST_HOME (from config)
+            beast_home / self.model_path / f"{self.model}.onnx",
+            # Direct path if model_path is absolute
             Path(self.model_path) / f"{self.model}.onnx",
+            # Home directory
             Path.home() / "models" / "piper" / f"{self.model}.onnx",
-            Path(__file__).parent.parent / "models" / "tts" / f"{self.model}.onnx",
+            # System path
             Path("/usr/share/piper-voices") / f"{self.model}.onnx",
         ]
         
+        logger.debug(f"Searching for Piper model: {self.model}")
         for path in search_paths:
+            logger.debug(f"  Checking: {path}")
             if path.exists():
+                logger.info(f"Found Piper model: {path}")
                 return path
                 
         # Try to find any .onnx file in model directories
-        for base in [Path(self.model_path), Path.home() / "models" / "piper"]:
+        for base in [project_root / "models" / "tts", beast_home / "models" / "tts", Path(self.model_path)]:
             if base.exists():
                 models = list(base.glob("*.onnx"))
                 if models:
+                    logger.info(f"Found Piper model: {models[0]}")
                     return models[0]
-                    
+        
+        logger.warning(f"Piper model not found. Searched: {[str(p) for p in search_paths]}")
         return None
         
     def _speak_espeak(self, text: str, blocking: bool = True):
-        """Speak using eSpeak"""
-        cmd = ['espeak', '-v', 'en', '-s', str(int(150 * self.rate)), text]
+        """Speak using eSpeak with ALSA device selection"""
+        # USB headset requires stereo output, espeak outputs mono
+        # Use sox to convert mono to stereo, or use plughw for auto-conversion
         
-        # Run with a timeout to prevent hanging
         try:
-            result = subprocess.run(cmd, capture_output=True, timeout=60)
-            logger.debug(f"espeak completed with return code {result.returncode}")
+            # Method 1: Use plughw which auto-converts formats
+            espeak_cmd = ['espeak', '-v', 'en', '-s', str(int(150 * self.rate)), '--stdout', text]
+            # plughw:2,0 provides automatic format conversion (mono->stereo, sample rate)
+            aplay_cmd = ['aplay', '-D', 'plughw:2,0']
+            
+            # Run espeak and pipe to aplay
+            espeak_proc = subprocess.Popen(espeak_cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            aplay_proc = subprocess.Popen(aplay_cmd, stdin=espeak_proc.stdout, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+            espeak_proc.stdout.close()
+            
+            if blocking:
+                aplay_proc.wait(timeout=60)
+                stderr = aplay_proc.stderr.read().decode() if aplay_proc.stderr else ""
+                if aplay_proc.returncode != 0:
+                    logger.warning(f"aplay returned {aplay_proc.returncode}: {stderr}")
+            
+            logger.debug(f"espeak+aplay completed")
         except subprocess.TimeoutExpired:
             logger.warning("espeak timed out after 60 seconds")
         except Exception as e:
-            logger.error(f"espeak error: {e}")
+            logger.warning(f"espeak+aplay failed ({e}), trying fallback")
+            # Fallback: try default device
+            try:
+                cmd = ['espeak', '-v', 'en', '-s', str(int(150 * self.rate)), text]
+                subprocess.run(cmd, capture_output=True, timeout=60)
+            except Exception as e2:
+                logger.error(f"espeak error: {e2}")
             
     def _speak_transformers(self, text: str, blocking: bool = True):
         """Speak using transformers TTS pipeline"""

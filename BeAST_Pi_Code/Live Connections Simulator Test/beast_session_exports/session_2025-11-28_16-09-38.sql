@@ -1,0 +1,78 @@
+-- BeAST End-of-Session Export (Antonio schema)
+-- session_id: 2dd86925-1518-4f5d-898a-6797ca886933
+-- device_id:  f3b2bb35-f700-4a09-a015-aeee71e67f57
+
+BEGIN;
+
+INSERT INTO raw.cognitive_metrics (ts, device_id, session_id, cognitive_load, alertness, fatigue) VALUES ('2025-11-28T21:09:38.371272', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 70.0, 90.0, 0.0);
+INSERT INTO raw.hydration_reading (ts, device_id, session_id, hydration_pct) VALUES ('2025-11-28T21:09:38.377754', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 95.0);
+INSERT INTO raw.ppg_reading (ts, device_id, session_id, hr_bpm, spo2_pct, raw_data) VALUES ('2025-11-28T21:09:38.379372', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 82.0, 98.0, NULL);
+INSERT INTO raw.temp_reading (ts, device_id, session_id, core_temp_c) VALUES ('2025-11-28T21:09:38.380833', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 37.27);
+INSERT INTO raw.environment (ts, device_id, ambient_temp, humidity_pct, heat_index_c) VALUES ('2025-11-28T21:09:38.382260', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', 24.5, NULL, NULL);
+INSERT INTO raw.cognitive_metrics (ts, device_id, session_id, cognitive_load, alertness, fatigue) VALUES ('2025-11-28T21:09:39.369784', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 69.7, 89.5, 0.5);
+INSERT INTO raw.hydration_reading (ts, device_id, session_id, hydration_pct) VALUES ('2025-11-28T21:09:39.371846', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 94.9);
+INSERT INTO raw.ppg_reading (ts, device_id, session_id, hr_bpm, spo2_pct, raw_data) VALUES ('2025-11-28T21:09:39.373373', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 78.6, 96.0, NULL);
+INSERT INTO raw.temp_reading (ts, device_id, session_id, core_temp_c) VALUES ('2025-11-28T21:09:39.374905', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 37.29);
+INSERT INTO raw.environment (ts, device_id, ambient_temp, humidity_pct, heat_index_c) VALUES ('2025-11-28T21:09:39.376399', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', 21.9, NULL, NULL);
+INSERT INTO raw.cognitive_metrics (ts, device_id, session_id, cognitive_load, alertness, fatigue) VALUES ('2025-11-28T21:09:40.370810', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 68.7, 89.0, 1.0);
+INSERT INTO raw.hydration_reading (ts, device_id, session_id, hydration_pct) VALUES ('2025-11-28T21:09:40.373122', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 94.8);
+INSERT INTO raw.ppg_reading (ts, device_id, session_id, hr_bpm, spo2_pct, raw_data) VALUES ('2025-11-28T21:09:40.375046', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 80.2, 96.0, NULL);
+INSERT INTO raw.temp_reading (ts, device_id, session_id, core_temp_c) VALUES ('2025-11-28T21:09:40.379558', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 37.28);
+INSERT INTO raw.environment (ts, device_id, ambient_temp, humidity_pct, heat_index_c) VALUES ('2025-11-28T21:09:40.380538', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', 24.2, NULL, NULL);
+INSERT INTO raw.cognitive_metrics (ts, device_id, session_id, cognitive_load, alertness, fatigue) VALUES ('2025-11-28T21:09:41.371860', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 67.0, 88.5, 1.5);
+INSERT INTO raw.hydration_reading (ts, device_id, session_id, hydration_pct) VALUES ('2025-11-28T21:09:41.373386', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 94.7);
+INSERT INTO raw.ppg_reading (ts, device_id, session_id, hr_bpm, spo2_pct, raw_data) VALUES ('2025-11-28T21:09:41.374559', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 84.8, 97.0, NULL);
+INSERT INTO raw.temp_reading (ts, device_id, session_id, core_temp_c) VALUES ('2025-11-28T21:09:41.375975', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 37.33);
+INSERT INTO raw.environment (ts, device_id, ambient_temp, humidity_pct, heat_index_c) VALUES ('2025-11-28T21:09:41.377458', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', 20.3, NULL, NULL);
+INSERT INTO raw.cognitive_metrics (ts, device_id, session_id, cognitive_load, alertness, fatigue) VALUES ('2025-11-28T21:09:42.372896', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 64.8, 88.0, 2.0);
+INSERT INTO raw.hydration_reading (ts, device_id, session_id, hydration_pct) VALUES ('2025-11-28T21:09:42.374892', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 94.6);
+INSERT INTO raw.ppg_reading (ts, device_id, session_id, hr_bpm, spo2_pct, raw_data) VALUES ('2025-11-28T21:09:42.376739', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 83.3, 99.0, NULL);
+INSERT INTO raw.temp_reading (ts, device_id, session_id, core_temp_c) VALUES ('2025-11-28T21:09:42.378633', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 37.45);
+INSERT INTO raw.environment (ts, device_id, ambient_temp, humidity_pct, heat_index_c) VALUES ('2025-11-28T21:09:42.380488', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', 22.7, NULL, NULL);
+INSERT INTO raw.cognitive_metrics (ts, device_id, session_id, cognitive_load, alertness, fatigue) VALUES ('2025-11-28T21:09:43.373928', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 62.0, 87.5, 2.5);
+INSERT INTO raw.hydration_reading (ts, device_id, session_id, hydration_pct) VALUES ('2025-11-28T21:09:43.375363', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 94.5);
+INSERT INTO raw.ppg_reading (ts, device_id, session_id, hr_bpm, spo2_pct, raw_data) VALUES ('2025-11-28T21:09:43.376470', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 85.9, 97.0, NULL);
+INSERT INTO raw.temp_reading (ts, device_id, session_id, core_temp_c) VALUES ('2025-11-28T21:09:43.377540', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 37.43);
+INSERT INTO raw.environment (ts, device_id, ambient_temp, humidity_pct, heat_index_c) VALUES ('2025-11-28T21:09:43.378657', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', 21.1, NULL, NULL);
+INSERT INTO raw.cognitive_metrics (ts, device_id, session_id, cognitive_load, alertness, fatigue) VALUES ('2025-11-28T21:09:44.374966', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 58.6, 87.0, 3.0);
+INSERT INTO raw.hydration_reading (ts, device_id, session_id, hydration_pct) VALUES ('2025-11-28T21:09:44.379958', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 94.4);
+INSERT INTO raw.ppg_reading (ts, device_id, session_id, hr_bpm, spo2_pct, raw_data) VALUES ('2025-11-28T21:09:44.382190', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 82.4, 96.0, NULL);
+INSERT INTO raw.temp_reading (ts, device_id, session_id, core_temp_c) VALUES ('2025-11-28T21:09:44.383841', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 37.44);
+INSERT INTO raw.environment (ts, device_id, ambient_temp, humidity_pct, heat_index_c) VALUES ('2025-11-28T21:09:44.385295', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', 20.7, NULL, NULL);
+INSERT INTO raw.cognitive_metrics (ts, device_id, session_id, cognitive_load, alertness, fatigue) VALUES ('2025-11-28T21:09:45.376009', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 54.9, 86.5, 3.5);
+INSERT INTO raw.hydration_reading (ts, device_id, session_id, hydration_pct) VALUES ('2025-11-28T21:09:45.377911', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 94.3);
+INSERT INTO raw.ppg_reading (ts, device_id, session_id, hr_bpm, spo2_pct, raw_data) VALUES ('2025-11-28T21:09:45.380048', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 84.9, 97.0, NULL);
+INSERT INTO raw.temp_reading (ts, device_id, session_id, core_temp_c) VALUES ('2025-11-28T21:09:45.381911', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 37.36);
+INSERT INTO raw.environment (ts, device_id, ambient_temp, humidity_pct, heat_index_c) VALUES ('2025-11-28T21:09:45.383847', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', 20.2, NULL, NULL);
+INSERT INTO raw.cognitive_metrics (ts, device_id, session_id, cognitive_load, alertness, fatigue) VALUES ('2025-11-28T21:09:46.377046', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 50.9, 86.0, 4.0);
+INSERT INTO raw.hydration_reading (ts, device_id, session_id, hydration_pct) VALUES ('2025-11-28T21:09:46.382573', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 94.2);
+INSERT INTO raw.ppg_reading (ts, device_id, session_id, hr_bpm, spo2_pct, raw_data) VALUES ('2025-11-28T21:09:46.383675', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 81.3, 98.0, NULL);
+INSERT INTO raw.temp_reading (ts, device_id, session_id, core_temp_c) VALUES ('2025-11-28T21:09:46.384803', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 37.45);
+INSERT INTO raw.environment (ts, device_id, ambient_temp, humidity_pct, heat_index_c) VALUES ('2025-11-28T21:09:46.386434', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', 24.3, NULL, NULL);
+INSERT INTO raw.cognitive_metrics (ts, device_id, session_id, cognitive_load, alertness, fatigue) VALUES ('2025-11-28T21:09:47.378116', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 46.6, 85.5, 4.5);
+INSERT INTO raw.hydration_reading (ts, device_id, session_id, hydration_pct) VALUES ('2025-11-28T21:09:47.380061', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 94.1);
+INSERT INTO raw.ppg_reading (ts, device_id, session_id, hr_bpm, spo2_pct, raw_data) VALUES ('2025-11-28T21:09:47.381629', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 88.7, 99.0, NULL);
+INSERT INTO raw.temp_reading (ts, device_id, session_id, core_temp_c) VALUES ('2025-11-28T21:09:47.383725', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 37.55);
+INSERT INTO raw.environment (ts, device_id, ambient_temp, humidity_pct, heat_index_c) VALUES ('2025-11-28T21:09:47.385574', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', 20.8, NULL, NULL);
+INSERT INTO raw.cognitive_metrics (ts, device_id, session_id, cognitive_load, alertness, fatigue) VALUES ('2025-11-28T21:09:48.379148', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 42.1, 85.0, 5.0);
+INSERT INTO raw.hydration_reading (ts, device_id, session_id, hydration_pct) VALUES ('2025-11-28T21:09:48.381493', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 94.0);
+INSERT INTO raw.ppg_reading (ts, device_id, session_id, hr_bpm, spo2_pct, raw_data) VALUES ('2025-11-28T21:09:48.386554', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 87.0, 96.0, NULL);
+INSERT INTO raw.temp_reading (ts, device_id, session_id, core_temp_c) VALUES ('2025-11-28T21:09:48.387620', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 37.48);
+INSERT INTO raw.environment (ts, device_id, ambient_temp, humidity_pct, heat_index_c) VALUES ('2025-11-28T21:09:48.388670', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', 23.3, NULL, NULL);
+INSERT INTO raw.cognitive_metrics (ts, device_id, session_id, cognitive_load, alertness, fatigue) VALUES ('2025-11-28T21:09:49.380194', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 37.6, 84.5, 5.5);
+INSERT INTO raw.hydration_reading (ts, device_id, session_id, hydration_pct) VALUES ('2025-11-28T21:09:49.382264', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 93.9);
+INSERT INTO raw.ppg_reading (ts, device_id, session_id, hr_bpm, spo2_pct, raw_data) VALUES ('2025-11-28T21:09:49.386344', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 87.3, 96.0, NULL);
+INSERT INTO raw.temp_reading (ts, device_id, session_id, core_temp_c) VALUES ('2025-11-28T21:09:49.388224', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 37.5);
+INSERT INTO raw.environment (ts, device_id, ambient_temp, humidity_pct, heat_index_c) VALUES ('2025-11-28T21:09:49.390071', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', 24.4, NULL, NULL);
+INSERT INTO raw.cognitive_metrics (ts, device_id, session_id, cognitive_load, alertness, fatigue) VALUES ('2025-11-28T21:09:50.381226', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 33.2, 84.0, 6.0);
+INSERT INTO raw.hydration_reading (ts, device_id, session_id, hydration_pct) VALUES ('2025-11-28T21:09:50.386641', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 93.8);
+INSERT INTO raw.ppg_reading (ts, device_id, session_id, hr_bpm, spo2_pct, raw_data) VALUES ('2025-11-28T21:09:50.387743', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 86.6, 97.0, NULL);
+INSERT INTO raw.temp_reading (ts, device_id, session_id, core_temp_c) VALUES ('2025-11-28T21:09:50.388803', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 37.42);
+INSERT INTO raw.environment (ts, device_id, ambient_temp, humidity_pct, heat_index_c) VALUES ('2025-11-28T21:09:50.389908', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', 20.2, NULL, NULL);
+INSERT INTO raw.cognitive_metrics (ts, device_id, session_id, cognitive_load, alertness, fatigue) VALUES ('2025-11-28T21:09:51.382269', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 28.9, 83.5, 6.5);
+INSERT INTO raw.hydration_reading (ts, device_id, session_id, hydration_pct) VALUES ('2025-11-28T21:09:51.384148', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 93.7);
+INSERT INTO raw.ppg_reading (ts, device_id, session_id, hr_bpm, spo2_pct, raw_data) VALUES ('2025-11-28T21:09:51.385676', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 89.8, 99.0, NULL);
+INSERT INTO raw.temp_reading (ts, device_id, session_id, core_temp_c) VALUES ('2025-11-28T21:09:51.387193', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', '2dd86925-1518-4f5d-898a-6797ca886933', 37.57);
+INSERT INTO raw.environment (ts, device_id, ambient_temp, humidity_pct, heat_index_c) VALUES ('2025-11-28T21:09:51.389269', 'f3b2bb35-f700-4a09-a015-aeee71e67f57', 20.6, NULL, NULL);
+
+COMMIT;

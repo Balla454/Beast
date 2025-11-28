@@ -1,0 +1,19 @@
+[Unit]
+Description=BeAST Voice Assistant
+After=network.target sound.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=beast1
+WorkingDirectory=/home/beast1/Beast/BeAST_Pi_Code/TheBeast/TheBeast/beast
+Environment="PATH=/home/beast1/beast-venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="HF_HUB_OFFLINE=1"
+Environment="TRANSFORMERS_OFFLINE=1"
+Environment="BEAST_DB_PASSWORD=beast"
+ExecStart=/home/beast1/beast-venv/bin/python main.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

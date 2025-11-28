@@ -1,0 +1,19 @@
+[Unit]
+Description=BeAST Arduino Data Collector
+After=network.target postgresql.service
+Wants=postgresql.service
+# Wait for Arduino to be recognized
+After=dev-ttyACM0.device
+
+[Service]
+Type=simple
+User=beast1
+WorkingDirectory=/home/beast1/Beast/BeAST_Pi_Code/Live Connections Simulator Test
+Environment="PATH=/home/beast1/beast-venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="BEAST_DB_PASSWORD=beast"
+ExecStart=/home/beast1/beast-venv/bin/python beast_arduino_to_sql_updated.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

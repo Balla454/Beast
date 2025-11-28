@@ -12,9 +12,18 @@ Boot sequence:
 5. Return to listening
 
 Power button triggers backup + shutdown (handled by triggerhappy)
+
+NOTE: This system runs fully OFFLINE. All AI models (Whisper, embeddings, Ollama)
+must be pre-downloaded. No internet connection is required during operation.
 """
 
 import os
+
+# Force offline mode BEFORE importing any ML libraries
+# This prevents HuggingFace from trying to download models
+os.environ['HF_HUB_OFFLINE'] = '1'
+os.environ['TRANSFORMERS_OFFLINE'] = '1'
+
 import sys
 import time
 import signal
