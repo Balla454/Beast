@@ -338,11 +338,11 @@ class TextToSpeech:
             for device in devices:
                 try:
                     logger.info(f"Attempting playback on {device}")
-                    # Use larger buffer to prevent fade-in
+                    # Use larger buffer to prevent fade-in, shorter timeout to prevent hangs
                     aplay_cmd = ['aplay', '-D', device, '-q', '--disable-softvol', '--buffer-size=8192', tmp_path]
                     result = subprocess.run(
                         aplay_cmd,
-                        timeout=10,
+                        timeout=6,
                         capture_output=True
                     )
                     if result.returncode == 0:
@@ -352,13 +352,16 @@ class TextToSpeech:
                     else:
                         logger.info(f"Failed on {device}: {result.stderr}")
                 except subprocess.TimeoutExpired:
-                    logger.warning(f"Timeout playing on {device}")
+                    logger.warning(f"Timeout playing on {device}, trying next...")
                 except Exception as e:
                     logger.info(f"Error playing on {device}: {e}")
             
             if not played:
                 logger.warning("Failed to play on any device, trying default")
-                subprocess.run(['aplay', tmp_path], timeout=10)
+                try:
+                    subprocess.run(['aplay', tmp_path], timeout=6)
+                except:
+                    logger.error("Default playback also failed")
             
             # Cleanup temp file
             try:

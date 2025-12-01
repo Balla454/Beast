@@ -817,14 +817,16 @@ BeAST:"""
             return self._handle_trend_query(query_lower, health_data)
         
         # =====================================================================
+        # HRV (check before heart rate to avoid 'heart rate variability' matching 'heart rate')
+        # =====================================================================
+        if any(w in query_lower for w in ['hrv', 'heart rate variability', 'variability']):
+            return self._handle_hrv_query(health_data)
+            
+        # =====================================================================
         # HEART RATE / CARDIOVASCULAR
         # =====================================================================
         if any(w in query_lower for w in ['heart rate', 'heartrate', 'pulse', 'bpm', 'hr ', 'my hr', 'heart beat', 'beating']):
             return self._handle_heart_rate_query(query_lower, health_data)
-            
-        # HRV queries
-        if any(w in query_lower for w in ['hrv', 'heart rate variability', 'variability']):
-            return self._handle_hrv_query(health_data)
             
         # =====================================================================
         # BLOOD PRESSURE (not directly measured, but handle gracefully)
@@ -917,6 +919,12 @@ BeAST:"""
             return self._handle_zone_query(health_data)
             
         # =====================================================================
+        # VITALS SUMMARY
+        # =====================================================================
+        if any(w in query_lower for w in ['vitals', 'vital signs', 'my vitals', 'show me']):
+            return self._generate_vitals_summary(health_data)
+            
+        # =====================================================================
         # STATUS / SUMMARY QUERIES
         # =====================================================================
         if any(w in query_lower for w in ['status', 'how am i', 'overview', 'summary', 'check']):
@@ -998,6 +1006,23 @@ BeAST:"""
         """Handle temperature queries"""
         core_temp = health_data.get('core_temp')
         ambient = health_data.get('ambient_temp')
+        
+        # Try to fetch from database if not in health_data
+        if core_temp is None and self.database:
+            try:
+                temp_result = self.database.get_sensor_data_at('temp', minutes_ago=0)
+                if temp_result and temp_result.get('core_temp') is not None:
+                    core_temp = temp_result['core_temp']
+            except Exception as e:
+                logger.error(f"Failed to fetch temperature from database: {e}")
+        
+        if ambient is None and self.database:
+            try:
+                ambient_result = self.database.get_sensor_data_at('ambient', minutes_ago=0)
+                if ambient_result and ambient_result.get('ambient_temp') is not None:
+                    ambient = ambient_result['ambient_temp']
+            except Exception as e:
+                logger.error(f"Failed to fetch ambient temp from database: {e}")
         
         if core_temp is None and ambient is None:
             return "Temperature data is not currently available."
@@ -1402,20 +1427,43 @@ BeAST:"""
         if self.database and not hr_avg:
             # Check for average/highest/lowest queries and compute from sensor_data
             import re
-            time_match = re.search(r'(over|last|past)\s+(?:the\s+)?(?:course\s+of\s+)?(?:an?\s+)?(\d+)?\s*(hour|minute)', query_lower)
             
-            if time_match or 'average' in query_lower or 'highest' in query_lower or 'lowest' in query_lower:
-                # Default to 60 minutes
-                minutes = 60
-                if time_match:
-                    time_unit = time_match.group(3)
-                    time_value = time_match.group(2)
-                    if time_value:
-                        minutes = int(time_value)
-                        if time_unit == 'hour':
-                            minutes *= 60
+            # Handle 'today' queries specially - use full dataset time range
+            if 'today' in query_lower:
+                # Get the full time range from the database
+                try:
+                    from datetime import datetime
+                    conn = self.database._get_connection()
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT MIN(timestamp), MAX(timestamp) FROM sensor_data WHERE sensor_type='ppg'")
+                    row = cursor.fetchone()
+                    if row and row[0] and row[1]:
+                        min_ts = datetime.fromisoformat(row[0])
+                        max_ts = datetime.fromisoformat(row[1])
+                        minutes = int((max_ts - min_ts).total_seconds() / 60)
+                    else:
+                        minutes = 60  # fallback
+                except Exception as e:
+                    logger.error(f"Could not calculate 'today' time range: {e}")
+                    minutes = 60
+            else:
+                time_match = re.search(r'(over|last|past)\s+(?:the\s+)?(?:course\s+of\s+)?(?:an?\s+)?(\d+)?\s*(hour|minute)', query_lower)
                 
-                # Get statistics from database
+                if time_match or 'average' in query_lower or 'highest' in query_lower or 'lowest' in query_lower:
+                    # Default to 60 minutes
+                    minutes = 60
+                    if time_match:
+                        time_unit = time_match.group(3)
+                        time_value = time_match.group(2)
+                        if time_value:
+                            minutes = int(time_value)
+                            if time_unit == 'hour':
+                                minutes *= 60
+                else:
+                    minutes = None
+            
+            # Get statistics from database if we have a valid minutes value
+            if minutes is not None:
                 stats = self.database.get_sensor_statistics('ppg', minutes=minutes)
                 if stats and 'heart_rate' in stats:
                     hr_stats = stats['heart_rate']
@@ -1423,12 +1471,15 @@ BeAST:"""
                     hr_min = hr_stats['min']
                     hr_max = hr_stats['max']
                     
+                    # For 'today' queries, report the full day
+                    time_desc = "today" if 'today' in query_lower else f"the last {minutes} minutes"
+                    
                     if 'average' in query_lower:
-                        return f"Your average heart rate over the last {minutes} minutes was {hr_avg:.0f} BPM (range: {hr_min:.0f}-{hr_max:.0f} BPM, {stats['count']} readings)."
+                        return f"Your average heart rate {time_desc} was {hr_avg:.0f} BPM (range: {hr_min:.0f}-{hr_max:.0f} BPM, {stats['count']} readings)."
                     elif 'highest' in query_lower:
-                        return f"Your highest heart rate in the last {minutes} minutes was {hr_max:.0f} BPM."
+                        return f"Your highest heart rate {time_desc} was {hr_max:.0f} BPM."
                     elif 'lowest' in query_lower:
-                        return f"Your lowest heart rate in the last {minutes} minutes was {hr_min:.0f} BPM."
+                        return f"Your lowest heart rate {time_desc} was {hr_min:.0f} BPM."
         
         if 'highest' in query_lower and 'heart' in query_lower:
             if hr_max:
@@ -1793,6 +1844,42 @@ BeAST:"""
             return "Time in zones: " + "; ".join(parts) + "."
         return "Zone duration data is not available for this session."
         
+    def _generate_vitals_summary(self, health_data: Dict) -> str:
+        """Generate concise vitals summary with key metrics"""
+        parts = []
+        
+        # Heart rate
+        hr = health_data.get('heart_rate')
+        if hr:
+            parts.append(f"Heart rate: {hr:.0f} BPM")
+            
+        # SpO2
+        spo2 = health_data.get('spo2')
+        if spo2:
+            parts.append(f"Oxygen: {spo2:.0f}%")
+            
+        # Temperature
+        core_temp = health_data.get('core_temp')
+        if core_temp:
+            temp_f = core_temp * 9/5 + 32
+            parts.append(f"Temperature: {core_temp:.1f}°C ({temp_f:.1f}°F)")
+        
+        # Fetch from database if not in health_data
+        if not core_temp and self.database:
+            try:
+                temp_result = self.database.get_sensor_data_at('temp', minutes_ago=0)
+                if temp_result and temp_result.get('core_temp'):
+                    core_temp = temp_result['core_temp']
+                    temp_f = core_temp * 9/5 + 32
+                    parts.append(f"Temperature: {core_temp:.1f}°C ({temp_f:.1f}°F)")
+            except:
+                pass
+        
+        if not parts:
+            return "Vital signs data is not currently available. Make sure sensors are connected."
+            
+        return "Your vitals: " + ", ".join(parts) + "."
+    
     def _generate_status_summary(self, health_data: Dict) -> str:
         """Generate overall status summary"""
         parts = []
