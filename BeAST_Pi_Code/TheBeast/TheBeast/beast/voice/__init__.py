@@ -1,4 +1,4 @@
-# BeAST Voice Module
+# beast Voice Module
 
 from .wake_word import WakeWordDetector
 from .speech_to_text import SpeechToText

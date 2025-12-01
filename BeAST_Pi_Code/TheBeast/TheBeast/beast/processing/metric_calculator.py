@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-BeAST Metric Calculator
+beast Metric Calculator
 =======================
 Calculates 10 physiological/cognitive metrics from extracted features.
 Maps to the metrics defined in beast_realtime_processor.py.
@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
-logger = logging.getLogger('BeAST.Metrics')
+logger = logging.getLogger('beast.Metrics')
 
 
 class Zone(Enum):

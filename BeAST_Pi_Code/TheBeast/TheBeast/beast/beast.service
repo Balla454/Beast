@@ -1,4 +1,4 @@
-# BeAST Systemd Service Template
+# beast Systemd Service Template
 # ===============================
 # Copy to /etc/systemd/system/beast.service after customizing paths
 # Or run scripts/setup.sh which will generate this automatically
@@ -10,7 +10,7 @@
 #   journalctl -u beast -f
 
 [Unit]
-Description=BeAST Wearable AI System
+Description=beast Wearable AI System
 After=network.target sound.target
 
 [Service]

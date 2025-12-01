@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-BeAST Sensor Interface
+beast Sensor Interface
 ======================
-Handles communication with BeAST earpiece sensors.
+Handles communication with beast earpiece sensors.
 Parses JSONL data stream from Arduino/sensors.
 """
 
@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Callable
 from dataclasses import dataclass
 
-logger = logging.getLogger('BeAST.Sensors')
+logger = logging.getLogger('beast.Sensors')
 
 
 @dataclass
@@ -34,7 +34,7 @@ class SensorReading:
 
 class SensorInterface:
     """
-    Interface for BeAST earpiece sensors.
+    Interface for beast earpiece sensors.
     
     Supports:
     - Serial connection to Arduino

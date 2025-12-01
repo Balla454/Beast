@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Wake Word Detection for BeAST
+Wake Word Detection for beast
 ==============================
 Listens continuously for the wake word "Beast" to trigger voice interaction.
 
@@ -19,7 +19,7 @@ from typing import Optional, Callable
 from pathlib import Path
 from scipy import signal as scipy_signal
 
-logger = logging.getLogger('BeAST.WakeWord')
+logger = logging.getLogger('beast.WakeWord')
 
 # Try to import wake word engines
 PORCUPINE_AVAILABLE = False

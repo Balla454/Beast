@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Database Manager for BeAST
+Database Manager for beast
 ==========================
 Local SQLite database for storing health metrics, sessions, and interactions.
 
@@ -16,12 +16,12 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 import threading
 
-logger = logging.getLogger('BeAST.Database')
+logger = logging.getLogger('beast.Database')
 
 
 class DatabaseManager:
     """
-    Manages local SQLite database for BeAST.
+    Manages local SQLite database for beast.
     
     Stores:
     - Session data

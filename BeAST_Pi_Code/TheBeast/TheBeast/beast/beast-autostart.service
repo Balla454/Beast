@@ -1,5 +1,5 @@
 [Unit]
-Description=BeAST Wearable AI System
+Description=beast Wearable AI System
 After=network.target sound.target
 Wants=sound.target
 
@@ -7,14 +7,14 @@ Wants=sound.target
 Type=simple
 User=%u
 Group=%u
-WorkingDirectory=%h/Beast/BeAST_Pi_Code/TheBeast/TheBeast/beast
+WorkingDirectory=%h/Beast/beast_Pi_Code/TheBeast/TheBeast/beast
 
 Environment="PATH=%h/beast-venv/bin:/usr/local/bin:/usr/bin:/bin"
-Environment="BEAST_HOME=%h/Beast/BeAST_Pi_Code/TheBeast/TheBeast/beast"
+Environment="BEAST_HOME=%h/Beast/beast_Pi_Code/TheBeast/TheBeast/beast"
 Environment="VIRTUAL_ENV=%h/beast-venv"
 
 ExecStartPre=/bin/sleep 5
-ExecStart=%h/beast-venv/bin/python %h/Beast/BeAST_Pi_Code/TheBeast/TheBeast/beast/main.py
+ExecStart=%h/beast-venv/bin/python %h/Beast/beast_Pi_Code/TheBeast/TheBeast/beast/main.py
 
 Restart=on-failure
 RestartSec=10

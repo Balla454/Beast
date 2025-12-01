@@ -1,4 +1,4 @@
-# BeAST Processing Module
+# beast Processing Module
 
 from .database_manager import DatabaseManager
 from .sensor_interface import SensorInterface

@@ -1,4 +1,4 @@
-# BeAST RAG Module
+# beast RAG Module
 
 from .health_rag import HealthRAG
 

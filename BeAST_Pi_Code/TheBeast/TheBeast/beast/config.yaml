@@ -1,4 +1,4 @@
-# BeAST System Configuration
+# beast System Configuration
 # ===========================
 # All paths use environment variables or relative paths.
 # Set BEAST_HOME to override the base directory (defaults to script location).
@@ -11,7 +11,7 @@
 #   BEAST_CONFIG     - Path to this config file
 
 system:
-  name: "BeAST"
+  name: "beast"
   version: "2.0.0"
   device: "pi5-16gb"
   

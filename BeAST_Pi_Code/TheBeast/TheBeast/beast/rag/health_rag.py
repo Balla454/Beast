@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Health RAG System for BeAST
+Health RAG System for beast
 ===========================
 Retrieval-Augmented Generation for health queries.
 
@@ -29,7 +29,7 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 import hashlib
 
-logger = logging.getLogger('BeAST.RAG')
+logger = logging.getLogger('beast.RAG')
 
 # Optional imports with availability flags
 TRANSFORMERS_AVAILABLE = False
@@ -91,7 +91,7 @@ except ImportError:
 
 class HealthRAG:
     """
-    Health-focused RAG system for BeAST.
+    Health-focused RAG system for beast.
     
     Retrieves user health data from PostgreSQL database (Antonio's schema)
     and generates personalized responses.
@@ -702,13 +702,13 @@ class HealthRAG:
             if health_items:
                 health_str = "Current readings: " + ", ".join(health_items) + ".\n"
                 
-        prompt = f"""You are BeAST, a health monitoring assistant. Be concise and helpful. Do not use emojis.
+        prompt = f"""You are beast, a health monitoring assistant. Be concise and helpful. Do not use emojis.
 
 {health_str}
 Knowledge: {context[:500]}
 
 User: {query}
-BeAST:"""
+beast:"""
         
         return prompt
         
@@ -797,8 +797,8 @@ BeAST:"""
             
             response = result[0]['generated_text']
             # Extract just the response part
-            if "BeAST:" in response:
-                response = response.split("BeAST:")[-1].strip()
+            if "beast:" in response:
+                response = response.split("beast:")[-1].strip()
                 
             return response
             
@@ -832,7 +832,7 @@ BeAST:"""
         # BLOOD PRESSURE (not directly measured, but handle gracefully)
         # =====================================================================
         if any(w in query_lower for w in ['blood pressure', 'bp ', 'systolic', 'diastolic']):
-            return "Blood pressure is not directly measured by BeAST sensors. However, your heart rate and other metrics can provide related insights. Consider using a dedicated blood pressure monitor."
+            return "Blood pressure is not directly measured by beast sensors. However, your heart rate and other metrics can provide related insights. Consider using a dedicated blood pressure monitor."
             
         # =====================================================================
         # BODY TEMPERATURE
@@ -1072,7 +1072,7 @@ BeAST:"""
         
         # Breathing rate is not directly measured
         if 'breathing rate' in query_lower or 'respiratory rate' in query_lower or 'how fast am i breathing' in query_lower:
-            return "Breathing rate is not directly measured by BeAST sensors. However, your blood oxygen is monitored which relates to respiratory function."
+            return "Breathing rate is not directly measured by beast sensors. However, your blood oxygen is monitored which relates to respiratory function."
             
         if spo2 is None:
             return "Blood oxygen (SpO2) data is not currently available."

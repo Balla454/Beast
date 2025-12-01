@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# BeAST Data Sync Script
+# beast Data Sync Script
 # =============================================================================
 # Triggered by power button via triggerhappy
 # 1. Creates timestamped backup of data directory
@@ -42,7 +42,7 @@ announce() {
 # Main sync function
 main() {
     log "=========================================="
-    log "BeAST Data Sync Started"
+    log "beast Data Sync Started"
     log "BEAST_HOME: $BEAST_HOME"
     log "DATA_DIR: $DATA_DIR"
     log "=========================================="

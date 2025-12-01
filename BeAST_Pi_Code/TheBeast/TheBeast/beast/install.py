@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-BeAST System Installer
+beast System Installer
 ======================
-Downloads and installs all necessary dependencies for the BeAST system.
+Downloads and installs all necessary dependencies for the beast system.
 
 Usage:
     python install.py              # Full installation
@@ -552,7 +552,7 @@ def create_directories():
 
 def full_install(include_dev: bool = False, minimal: bool = False):
     """Run full installation."""
-    print_header("BeAST System Installation")
+    print_header("beast System Installation")
     print(f"Platform: {get_platform()}")
     print(f"Python: {sys.version}")
     if is_raspberry_pi():
@@ -608,7 +608,7 @@ def full_install(include_dev: bool = False, minimal: bool = False):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="BeAST System Installer",
+        description="beast System Installer",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

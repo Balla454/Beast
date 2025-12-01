@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-BeAST Main Entry Point
+beast Main Entry Point
 ======================
 Raspberry Pi 5 Edge Deployment
 
 Boot sequence:
 1. Initialize all systems
-2. Announce "BeAST is ready"
+2. Announce "beast is ready"
 3. Enter wake word listening loop
 4. Process voice commands
 5. Return to listening
@@ -55,11 +55,11 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
-logger = logging.getLogger('BeAST')
+logger = logging.getLogger('beast')
 
 
-class BeASTSystem:
-    """Main BeAST system controller"""
+class beastSystem:
+    """Main beast system controller"""
     
     def __init__(self, config_path: str = None):
         self.running = False
@@ -92,7 +92,7 @@ class BeASTSystem:
             # Return minimal default config with dynamic paths
             data_dir = Path(os.environ.get('BEAST_DATA_DIR', BEAST_DIR / 'data'))
             return {
-                'system': {'name': 'BeAST'},
+                'system': {'name': 'beast'},
                 'voice': {
                     'wake_word': 'beast',
                     'stt': {'engine': 'whisper', 'model': 'tiny.en'},
@@ -113,7 +113,7 @@ class BeASTSystem:
     def initialize(self) -> bool:
         """Initialize all system components"""
         logger.info("=" * 60)
-        logger.info("BeAST System Initializing...")
+        logger.info("beast System Initializing...")
         logger.info("=" * 60)
         
         try:
@@ -127,7 +127,7 @@ class BeASTSystem:
             self.announcer = Announcer(self.tts)
             
             # Announce startup
-            self.announcer.announce("BeAST system starting up. Please wait.")
+            self.announcer.announce("beast system starting up. Please wait.")
             
             # Initialize Speech-to-Text
             logger.info("Initializing Speech-to-Text...")
@@ -153,7 +153,7 @@ class BeASTSystem:
             )
             
             logger.info("=" * 60)
-            logger.info("BeAST System Ready!")
+            logger.info("beast System Ready!")
             logger.info("=" * 60)
             
             return True
@@ -161,7 +161,7 @@ class BeASTSystem:
         except Exception as e:
             logger.error(f"Initialization failed: {e}", exc_info=True)
             if self.announcer:
-                self.announcer.announce("BeAST initialization failed. Please check logs.")
+                self.announcer.announce("beast initialization failed. Please check logs.")
             return False
     
     def run(self):
@@ -171,7 +171,7 @@ class BeASTSystem:
             return
         
         # Announce ready
-        self.announcer.announce("BeAST is ready. Say Beast to ask a question.")
+        self.announcer.announce("beast is ready. Say Beast to ask a question.")
         self.running = True
         
         logger.info("Entering main interaction loop...")
@@ -255,10 +255,10 @@ class BeASTSystem:
     
     def shutdown(self):
         """Clean shutdown of all components"""
-        logger.info("Shutting down BeAST system...")
+        logger.info("Shutting down beast system...")
         
         if self.announcer:
-            self.announcer.announce("BeAST shutting down. Goodbye.")
+            self.announcer.announce("beast shutting down. Goodbye.")
         
         if self.wake_detector:
             self.wake_detector.stop()
@@ -266,14 +266,14 @@ class BeASTSystem:
         if self.db:
             self.db.close()
             
-        logger.info("BeAST shutdown complete.")
+        logger.info("beast shutdown complete.")
 
 
 def main():
     """Entry point"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='BeAST Voice Assistant')
+    parser = argparse.ArgumentParser(description='beast Voice Assistant')
     parser.add_argument('--config', '-c', type=str, default=None,
                         help='Path to config.yaml')
     parser.add_argument('--test', action='store_true',
@@ -281,7 +281,7 @@ def main():
     args = parser.parse_args()
     
     # Create and run system
-    beast = BeASTSystem(config_path=args.config)
+    beast = beastSystem(config_path=args.config)
     
     if args.test:
         # Test mode: direct interaction without wake word

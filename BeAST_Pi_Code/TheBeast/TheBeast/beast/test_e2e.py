@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-BeAST End-to-End Test with Simulated Data
+beast End-to-End Test with Simulated Data
 ==========================================
 Tests the complete pipeline:
 1. Simulated sensor data generation
@@ -29,7 +29,7 @@ logging.basicConfig(
     format='%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s',
     datefmt='%H:%M:%S'
 )
-logger = logging.getLogger('BeAST.E2E')
+logger = logging.getLogger('beast.E2E')
 
 # Add beast directory to path
 BEAST_DIR = Path(__file__).parent
@@ -387,7 +387,7 @@ class E2ETestRunner:
     def run_test_suite(self):
         """Run comprehensive test suite"""
         print("\n" + "=" * 70)
-        print(f"BeAST End-to-End Test - Scenario: {self.scenario.upper()}")
+        print(f"beast End-to-End Test - Scenario: {self.scenario.upper()}")
         print("=" * 70)
         
         # Test queries organized by category
@@ -465,7 +465,7 @@ class E2ETestRunner:
 def run_interactive_mode(scenario: str = "normal"):
     """Run in interactive mode - ask questions live"""
     print("\n" + "=" * 70)
-    print("BeAST Interactive Test Mode")
+    print("beast Interactive Test Mode")
     print("=" * 70)
     print(f"Scenario: {scenario}")
     print("Type your questions, or 'quit' to exit")
@@ -506,7 +506,7 @@ def run_interactive_mode(scenario: str = "normal"):
             # Update sensors and query
             runner.update_sensors()
             response = runner.query(user_input)
-            print(f"🤖 BeAST: {response}")
+            print(f"🤖 beast: {response}")
             
         except KeyboardInterrupt:
             print("\nGoodbye!")
@@ -519,7 +519,7 @@ def main():
     """Main entry point"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='BeAST End-to-End Test')
+    parser = argparse.ArgumentParser(description='beast End-to-End Test')
     parser.add_argument('--scenario', '-s', 
                         choices=['normal', 'stressed', 'fatigued', 'active', 'dehydrated'],
                         default='normal',

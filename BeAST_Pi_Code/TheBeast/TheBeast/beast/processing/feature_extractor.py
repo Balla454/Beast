@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-BeAST Feature Extractor
+beast Feature Extractor
 =======================
 Extracts physiological and cognitive features from raw sensor data.
 Based on sensor_fusion.py patterns.
@@ -11,12 +11,12 @@ import numpy as np
 from typing import Dict, List, Optional, Tuple
 from collections import deque
 
-logger = logging.getLogger('BeAST.Features')
+logger = logging.getLogger('beast.Features')
 
 
 class FeatureExtractor:
     """
-    Extract features from BeAST sensor data.
+    Extract features from beast sensor data.
     
     Features extracted:
     - Heart rate and HRV from PPG

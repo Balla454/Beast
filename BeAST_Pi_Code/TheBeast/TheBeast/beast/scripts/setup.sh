@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# BeAST System Setup Script
+# beast System Setup Script
 # =============================================================================
 # Run this once on a fresh Raspberry Pi 5 to configure:
 # - System dependencies
@@ -26,7 +26,7 @@ VENV_DIR="${BEAST_VENV:-$BEAST_HOME/.venv}"
 HOST_PC="${BEAST_BACKUP_HOST:-}"
 
 echo "=========================================="
-echo "BeAST System Setup"
+echo "beast System Setup"
 echo "=========================================="
 echo "BEAST_HOME: $BEAST_HOME"
 echo "DATA_DIR: $DATA_DIR"
@@ -125,7 +125,7 @@ echo ">>> Configuring power button handler..."
 
 # Create triggerhappy config
 sudo tee /etc/triggerhappy/triggers.d/beast-power.conf > /dev/null << EOF
-# BeAST power button handler
+# beast power button handler
 # Triggers data sync and shutdown on power button press
 KEY_POWER    1    $BEAST_HOME/scripts/zip.sh
 EOF
@@ -157,13 +157,13 @@ else
     echo "SSH key already exists."
 fi
 
-# Create systemd service for BeAST
+# Create systemd service for beast
 echo ""
 echo ">>> Creating systemd service..."
 
 sudo tee /etc/systemd/system/beast.service > /dev/null << EOF
 [Unit]
-Description=BeAST Wearable AI System
+Description=beast Wearable AI System
 After=network.target sound.target
 
 [Service]
@@ -200,7 +200,7 @@ sudo usermod -a -G audio $(whoami)
 
 # Create environment file for easy sourcing
 cat > "$BEAST_HOME/.env" << EOF
-# BeAST Environment Variables
+# beast Environment Variables
 # Source this file: source $BEAST_HOME/.env
 
 export BEAST_HOME="$BEAST_HOME"
@@ -226,7 +226,7 @@ chmod 600 "$BEAST_HOME/.env"
 # Final summary
 echo ""
 echo "=========================================="
-echo "BeAST Setup Complete!"
+echo "beast Setup Complete!"
 echo "=========================================="
 echo ""
 echo "Directory structure:"

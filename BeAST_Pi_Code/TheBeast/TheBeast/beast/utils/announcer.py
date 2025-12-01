@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Announcer Utility for BeAST
+Announcer Utility for beast
 ===========================
 Handles system announcements and audio feedback.
 """
@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 from typing import Optional
 
-logger = logging.getLogger('BeAST.Announcer')
+logger = logging.getLogger('beast.Announcer')
 
 
 class Announcer:
@@ -19,15 +19,15 @@ class Announcer:
     
     Usage:
         announcer = Announcer(tts_engine)
-        announcer.announce("BeAST is ready")
+        announcer.announce("beast is ready")
         announcer.play_sound("listening")
     """
     
     # Standard announcements
     ANNOUNCEMENTS = {
-        'startup': "BeAST system starting up. Please wait.",
-        'ready': "BeAST is ready. Say Beast to ask a question.",
-        'shutdown': "BeAST shutting down. Goodbye.",
+        'startup': "beast system starting up. Please wait.",
+        'ready': "beast is ready. Say Beast to ask a question.",
+        'shutdown': "beast shutting down. Goodbye.",
         'error': "An error occurred. Please check the logs.",
         'listening': "I'm listening.",
         'processing': "Processing your request.",

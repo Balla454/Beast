@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Speech-to-Text for BeAST
+Speech-to-Text for beast
 ========================
 Converts spoken audio to text using local models.
 
@@ -22,7 +22,7 @@ from typing import Optional, Union
 import io
 from scipy import signal as scipy_signal
 
-logger = logging.getLogger('BeAST.STT')
+logger = logging.getLogger('beast.STT')
 
 # Try to import STT engines
 WHISPER_AVAILABLE = False
@@ -69,7 +69,7 @@ except ImportError:
 
 class SpeechToText:
     """
-    Speech-to-text engine for BeAST.
+    Speech-to-text engine for beast.
     
     Usage:
         stt = SpeechToText(config={'engine': 'whisper', 'model': 'openai/whisper-tiny'})

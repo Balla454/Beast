@@ -1,15 +1,15 @@
-# BeAST Edge Deployment
+# beast Edge Deployment
 ## Raspberry Pi 5 Wearable AI System
 
-This directory contains the complete edge deployment for BeAST (Bilateral Ear-worn Assessment and Sensing Technology).
+This directory contains the complete edge deployment for beast (Bilateral Ear-worn Assessment and Sensing Technology).
 
 ## Environment Variables
 
-BeAST uses environment variables for all paths, making it fully portable:
+beast uses environment variables for all paths, making it fully portable:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `BEAST_HOME` | Script location | Base directory for BeAST |
+| `BEAST_HOME` | Script location | Base directory for beast |
 | `BEAST_DATA_DIR` | `$BEAST_HOME/data` | Sensor data and database |
 | `BEAST_MODELS_DIR` | `$BEAST_HOME/models` | AI model files |
 | `BEAST_LOG_DIR` | `$BEAST_HOME/logs` | Log files |
@@ -101,7 +101,7 @@ ssh-copy-id ${BEAST_BACKUP_USER}@${BEAST_BACKUP_HOST}
 ### 4. Start the Service
 
 ```bash
-# Start BeAST
+# Start beast
 sudo systemctl start beast
 
 # Enable auto-start on boot
@@ -113,7 +113,7 @@ journalctl -u beast -f
 
 ## User Experience Flow
 
-1. **Boot**: Pi powers on → BeAST service starts → Announces "BeAST is ready"
+1. **Boot**: Pi powers on → beast service starts → Announces "beast is ready"
 2. **Wake Word**: User says "Beast" → System announces "I'm listening"
 3. **Question**: User asks health question → STT transcribes → RAG generates response
 4. **Answer**: TTS speaks the answer → Returns to wake word listening

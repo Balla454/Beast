@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Text-to-Speech for BeAST
+Text-to-Speech for beast
 ========================
 Converts text to spoken audio using local TTS engines.
 
@@ -17,7 +17,7 @@ import os
 from pathlib import Path
 from typing import Optional
 
-logger = logging.getLogger('BeAST.TTS')
+logger = logging.getLogger('beast.TTS')
 
 # Try to import TTS engines
 PIPER_AVAILABLE = False
@@ -58,11 +58,11 @@ except ImportError:
 
 class TextToSpeech:
     """
-    Text-to-speech engine for BeAST.
+    Text-to-speech engine for beast.
     
     Usage:
         tts = TextToSpeech(config={'engine': 'piper'})
-        tts.speak("Hello, I am BeAST")
+        tts.speak("Hello, I am beast")
     """
     
     def __init__(self, config: dict = None):
@@ -557,7 +557,7 @@ if __name__ == "__main__":
     tts = TextToSpeech(config={'engine': 'piper'})
     
     test_texts = [
-        "Hello, I am BeAST, your personal health assistant.",
+        "Hello, I am beast, your personal health assistant.",
         "Your current heart rate is 72 beats per minute.",
         "Based on your data, you appear to be well rested today."
     ]
