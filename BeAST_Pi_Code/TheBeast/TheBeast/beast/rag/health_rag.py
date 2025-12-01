@@ -2182,10 +2182,35 @@ beast:"""
         try:
             # Get user health data
             health_data = self._get_user_health_context()
-            
-            # Check for rule-based queries first (historical queries, specific metrics, etc.)
-            # These bypass the LLM for faster, more accurate responses
             query_lower = question.lower()
+            
+            # Detect advice/how-to queries that need LLM
+            advice_keywords = [
+                'how do i', 'how to', 'how can i', 'what should i', 'what can i do',
+                'ways to', 'methods', 'techniques', 'tips for', 'help me',
+                'advice', 'recommend', 'suggest', 'improve', 'reduce', 'increase',
+                'lower', 'raise', 'better', 'manage', 'deal with', 'handle',
+                'exercises', 'breathing', 'meditation', 'relaxation', 'strategies'
+            ]
+            
+            needs_llm = any(keyword in query_lower for keyword in advice_keywords)
+            
+            # Also use LLM if it's a complex question (multiple clauses, why/explain)
+            if not needs_llm:
+                complex_indicators = ['why', 'explain', 'tell me about', 'what is the difference', 'compare']
+                needs_llm = any(indicator in query_lower for indicator in complex_indicators)
+            
+            # Use LLM for advice/complex queries
+            if needs_llm:
+                try:
+                    context = self._retrieve_relevant_context(question)
+                    response = self._generate_with_pipeline(question, context, health_data)
+                    elapsed = time.time() - start_time
+                    logger.info(f"Query processed (LLM pipeline) in {elapsed:.2f}s")
+                    return response
+                except Exception as e:
+                    logger.warning(f"LLM pipeline failed, falling back to rule-based: {e}")
+                    # Fall through to rule-based handling
             
             # Historical time-based queries (e.g., "heart rate 30 minutes ago")
             if 'ago' in query_lower or 'minutes ago' in query_lower or 'hour ago' in query_lower:
@@ -2194,9 +2219,21 @@ beast:"""
                 logger.info(f"Query processed (rule-based) in {elapsed:.2f}s")
                 return response
             
-            # Use rule-based handler for all other queries - it's faster and more accurate
-            # than the LLM for health metrics
+            # Use rule-based handler for metric queries - it's faster and more accurate
             response = self._generate_rule_based(question, "", health_data)
+            
+            # If we got the default "I'm here to help" response, try LLM instead
+            if "I'm here to help with your health questions" in response:
+                try:
+                    context = self._retrieve_relevant_context(question)
+                    llm_response = self._generate_with_pipeline(question, context, health_data)
+                    elapsed = time.time() - start_time
+                    logger.info(f"Query processed (LLM fallback) in {elapsed:.2f}s")
+                    return llm_response
+                except Exception as e:
+                    logger.warning(f"LLM fallback failed: {e}")
+                    # Return the rule-based response
+            
             elapsed = time.time() - start_time
             logger.info(f"Query processed (rule-based) in {elapsed:.2f}s")
             return response
