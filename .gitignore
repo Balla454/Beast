@@ -25,3 +25,12 @@ BeAST_Pi_Code/TheBeast/TheBeast/models/
 *.safetensors
 *.onnx
 *.bin
+
+# BeAST specific - large files not for git
+BeAST_Pi_Code/**/data/
+BeAST_Pi_Code/**/models/
+BeAST_Pi_Code/**/logs/
+*.db
+*.safetensors
+*.onnx
+*.bin
