@@ -1328,19 +1328,74 @@ beast:"""
         hr = health_data.get('heart_rate')
         motion = health_data.get('motion_magnitude')
         
+        # Try to fetch heart rate from database if not available
+        if hr is None and self.database:
+            try:
+                ppg_result = self.database.get_sensor_data_at('ppg', minutes_ago=0)
+                if ppg_result and ppg_result.get('heart_rate'):
+                    hr = ppg_result['heart_rate']
+            except Exception as e:
+                logger.error(f"Failed to fetch heart rate for calorie calculation: {e}")
+        
         if hr is None:
             return "Metabolic data requires heart rate monitoring, which is not currently available."
-            
-        # Very rough estimation
-        # Basal metabolic rate varies, using simple estimate
-        bmr_per_min = 1.2  # kcal per minute at rest
+        
+        # Calculate calories burned over time by getting statistics
+        total_calories = None
+        time_window = 60  # default to last hour
+        
+        if self.database:
+            try:
+                from datetime import datetime
+                # Get full time range from database
+                conn = self.database._get_connection()
+                cursor = conn.cursor()
+                cursor.execute("SELECT MIN(timestamp), MAX(timestamp), COUNT(*) FROM sensor_data WHERE sensor_type='ppg'")
+                row = cursor.fetchone()
+                
+                if row and row[0] and row[1]:
+                    min_ts = datetime.fromisoformat(row[0])
+                    max_ts = datetime.fromisoformat(row[1])
+                    total_minutes = (max_ts - min_ts).total_seconds() / 60
+                    count = row[2]
+                    
+                    if total_minutes > 0 and count > 0:
+                        # Get average heart rate over the time period
+                        stats = self.database.get_sensor_statistics('ppg', minutes=int(total_minutes))
+                        if stats and 'heart_rate' in stats:
+                            avg_hr = stats['heart_rate']['avg']
+                            
+                            # Estimate calories based on average HR
+                            # Very rough estimation
+                            bmr_per_min = 1.2  # kcal per minute at rest
+                            
+                            if avg_hr > 100:
+                                multiplier = 1.4
+                            elif avg_hr > 80:
+                                multiplier = 1.2
+                            else:
+                                multiplier = 1.0
+                            
+                            estimated_rate = bmr_per_min * multiplier
+                            total_calories = estimated_rate * total_minutes
+                            
+                            hours = int(total_minutes / 60)
+                            mins = int(total_minutes % 60)
+                            time_str = f"{hours}h {mins}m" if hours > 0 else f"{mins}m"
+                            
+                            return f"Estimated calories burned over {time_str}: ~{total_calories:.0f} kcal. Average heart rate: {avg_hr:.0f} BPM. Current rate: ~{estimated_rate:.1f} kcal/min."
+            except Exception as e:
+                logger.error(f"Failed to calculate total calories: {e}")
+        
+        # Fallback to current rate only
+        bmr_per_min = 1.2
         
         if motion and motion > 11:
-            multiplier = 1.5  # Active
+            multiplier = 1.5
         elif motion and motion > 10:
-            multiplier = 1.2  # Light activity
+            multiplier = 1.2
         else:
-            multiplier = 1.0  # Rest
+            multiplier = 1.0
             
         if hr > 100:
             multiplier *= 1.3
@@ -1349,7 +1404,7 @@ beast:"""
             
         estimated_rate = bmr_per_min * multiplier
         
-        return f"Estimated metabolic rate: ~{estimated_rate:.1f} kcal/min. Heart rate: {hr:.0f} BPM. Note: This is a rough estimate. Actual values depend on individual factors."
+        return f"Current metabolic rate: ~{estimated_rate:.1f} kcal/min (heart rate: {hr:.0f} BPM). Total calories require continuous monitoring data."
         
     def _handle_activity_query(self, query_lower: str, health_data: Dict) -> str:
         """Handle activity/motion queries"""
