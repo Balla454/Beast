@@ -1030,29 +1030,31 @@ beast:"""
         parts = []
         
         if core_temp is not None:
-            temp_f = core_temp * 9/5 + 32
+            # Database stores temperature in Fahrenheit
+            temp_f = core_temp
+            temp_c = (core_temp - 32) * 5/9
             
             if 'fever' in query_lower:
-                if core_temp > 38:
-                    parts.append(f"Yes, your temperature of {core_temp:.1f}°C ({temp_f:.1f}°F) indicates a fever")
-                elif core_temp > 37.5:
-                    parts.append(f"Your temperature is slightly elevated at {core_temp:.1f}°C ({temp_f:.1f}°F) - borderline fever")
+                if temp_f > 100.4:
+                    parts.append(f"Yes, your temperature of {temp_f:.1f}°F ({temp_c:.1f}°C) indicates a fever")
+                elif temp_f > 99.5:
+                    parts.append(f"Your temperature is slightly elevated at {temp_f:.1f}°F ({temp_c:.1f}°C) - borderline fever")
                 else:
-                    parts.append(f"No, your temperature is {core_temp:.1f}°C ({temp_f:.1f}°F), which is normal")
+                    parts.append(f"No, your temperature is {temp_f:.1f}°F ({temp_c:.1f}°C), which is normal")
             elif 'normal' in query_lower or 'elevated' in query_lower:
-                if core_temp < 36:
-                    parts.append(f"Your core temperature is {core_temp:.1f}°C ({temp_f:.1f}°F), below normal range")
-                elif core_temp > 37.5:
-                    parts.append(f"Your core temperature is {core_temp:.1f}°C ({temp_f:.1f}°F), elevated")
+                if temp_f < 97:
+                    parts.append(f"Your core temperature is {temp_f:.1f}°F ({temp_c:.1f}°C), below normal range")
+                elif temp_f > 99.5:
+                    parts.append(f"Your core temperature is {temp_f:.1f}°F ({temp_c:.1f}°C), elevated")
                 else:
-                    parts.append(f"Your core temperature is {core_temp:.1f}°C ({temp_f:.1f}°F), normal")
+                    parts.append(f"Your core temperature is {temp_f:.1f}°F ({temp_c:.1f}°C), normal")
             elif 'skin' in query_lower:
-                parts.append(f"Core temperature is {core_temp:.1f}°C ({temp_f:.1f}°F). Skin temperature is typically 1-2°C lower.")
+                parts.append(f"Core temperature is {temp_f:.1f}°F ({temp_c:.1f}°C). Skin temperature is typically 2-4°F lower.")
             else:
-                parts.append(f"Your body temperature is {core_temp:.1f}°C ({temp_f:.1f}°F)")
-                if core_temp > 37.5:
+                parts.append(f"Your body temperature is {temp_f:.1f}°F ({temp_c:.1f}°C)")
+                if temp_f > 99.5:
                     parts.append("which is elevated")
-                elif core_temp < 36:
+                elif temp_f < 97:
                     parts.append("which is below normal")
                 else:
                     parts.append("which is normal")
@@ -1890,8 +1892,9 @@ beast:"""
         # Temperature
         core_temp = health_data.get('core_temp')
         if core_temp:
-            temp_f = core_temp * 9/5 + 32
-            parts.append(f"Temperature: {core_temp:.1f}°C ({temp_f:.1f}°F)")
+            # Database stores in Fahrenheit
+            temp_c = (core_temp - 32) * 5/9
+            parts.append(f"Temperature: {core_temp:.1f}°F ({temp_c:.1f}°C)")
         
         # Fetch from database if not in health_data
         if not core_temp and self.database:
@@ -1899,8 +1902,8 @@ beast:"""
                 temp_result = self.database.get_sensor_data_at('temp', minutes_ago=0)
                 if temp_result and temp_result.get('core_temp'):
                     core_temp = temp_result['core_temp']
-                    temp_f = core_temp * 9/5 + 32
-                    parts.append(f"Temperature: {core_temp:.1f}°C ({temp_f:.1f}°F)")
+                    temp_c = (core_temp - 32) * 5/9
+                    parts.append(f"Temperature: {core_temp:.1f}°F ({temp_c:.1f}°C)")
             except:
                 pass
         
