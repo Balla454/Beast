@@ -1170,6 +1170,26 @@ beast:"""
         cognitive = health_data.get('cognitive_load')
         alertness = health_data.get('alertness')
         
+        # Try to estimate from heart rate if no cognitive data
+        if cognitive is None and self.database:
+            try:
+                # Get recent heart rate to estimate cognitive load
+                hr_result = self.database.get_sensor_data_at('ppg', minutes_ago=0)
+                if hr_result and hr_result.get('heart_rate'):
+                    hr = hr_result['heart_rate']
+                    # Rough cognitive load estimation from heart rate
+                    # Resting HR ~60-70, cognitive load increases HR
+                    # Simple linear mapping: 60 BPM = 20% load, 100 BPM = 70% load
+                    if hr < 60:
+                        cognitive = 15
+                    elif hr > 100:
+                        cognitive = 75
+                    else:
+                        cognitive = 20 + ((hr - 60) / 40) * 50  # Linear scale
+                    logger.info(f"Estimated cognitive load from HR: {cognitive:.0f}")
+            except Exception as e:
+                logger.debug(f"Could not estimate cognitive load: {e}")
+        
         if cognitive is None:
             return "Cognitive load data is not currently available."
             
