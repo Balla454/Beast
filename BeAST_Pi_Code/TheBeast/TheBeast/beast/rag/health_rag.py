@@ -1319,15 +1319,14 @@ beast:"""
             try:
                 bioz_result = self.database.get_sensor_data_at('bioz', minutes_ago=0)
                 if bioz_result and bioz_result.get('bioz_data'):
-                    # BioZ data: [re, im, magnitude, phase]
+                    # BioZ data is a single value (impedance magnitude)
                     bioz_data = bioz_result['bioz_data']
-                    if len(bioz_data) >= 3:
-                        magnitude = bioz_data[2]
-                        # Higher bioimpedance magnitude typically correlates with better hydration
-                        # Rough estimation: normalize to 0-100 scale
-                        # Typical range might be 500-2000 for magnitude
-                        hydration = min(100, max(0, ((magnitude - 500) / 1500) * 100))
-                        logger.info(f"Estimated hydration from bioimpedance: {hydration:.0f}% (magnitude: {magnitude})")
+                    magnitude = bioz_data[0] if isinstance(bioz_data, list) else bioz_data
+                    # Lower bioimpedance typically indicates better hydration (more water = less resistance)
+                    # Typical range: 100-200 ohms
+                    # Inverse scale: 100 ohms = 80%, 200 ohms = 40%
+                    hydration = min(100, max(20, 100 - ((magnitude - 100) / 100) * 40))
+                    logger.info(f"Estimated hydration from bioimpedance: {hydration:.0f}% (impedance: {magnitude:.1f} ohms)")
             except Exception as e:
                 logger.debug(f"Could not estimate hydration from bioimpedance: {e}")
         
@@ -1800,6 +1799,16 @@ beast:"""
             fatigue = health_data.get('fatigue')
             cognitive = health_data.get('cognitive_load')
             alertness = health_data.get('alertness')
+            hr = health_data.get('heart_rate')
+            
+            # Estimate fatigue from heart rate if needed
+            if fatigue is None and hr is not None:
+                # Higher sustained HR can indicate fatigue
+                if hr > 90:
+                    fatigue = 60 + ((hr - 90) / 30) * 30  # 90 BPM = 60%, 120+ BPM = 90%
+                else:
+                    fatigue = max(20, (hr - 60) / 30 * 40)  # 60 BPM = 20%, 90 BPM = 60%
+                logger.info(f"Estimated fatigue from HR: {fatigue:.0f}%")
             
             need_rest = False
             reasons = []
@@ -1813,13 +1822,17 @@ beast:"""
             if alertness is not None and alertness < 40:
                 need_rest = True
                 reasons.append(f"low alertness at {alertness:.0f}%")
+            if hr is not None and hr > 100:
+                reasons.append(f"elevated heart rate at {hr:.0f} BPM")
+                if hr > 110:
+                    need_rest = True
                 
             if need_rest:
                 return f"Yes, rest is recommended. Factors: {', '.join(reasons)}."
-            elif len(reasons) == 0 and (fatigue is None and cognitive is None):
-                return "I don't have enough data to assess if you need rest."
+            elif len(reasons) > 0:
+                return f"You're managing okay, but consider a break soon. {', '.join(reasons)}."
             else:
-                return "Not urgently, but rest is always beneficial. Your metrics look manageable."
+                return "Not urgently. Your metrics look good, but rest is always beneficial."
                 
         # Am I overexerted?
         if 'overexert' in query_lower:
