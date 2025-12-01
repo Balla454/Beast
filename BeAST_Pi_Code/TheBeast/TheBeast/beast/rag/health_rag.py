@@ -1314,6 +1314,23 @@ beast:"""
         """Handle hydration queries"""
         hydration = health_data.get('hydration')
         
+        # Try to estimate from bioimpedance data if not directly available
+        if hydration is None and self.database:
+            try:
+                bioz_result = self.database.get_sensor_data_at('bioz', minutes_ago=0)
+                if bioz_result and bioz_result.get('bioz_data'):
+                    # BioZ data: [re, im, magnitude, phase]
+                    bioz_data = bioz_result['bioz_data']
+                    if len(bioz_data) >= 3:
+                        magnitude = bioz_data[2]
+                        # Higher bioimpedance magnitude typically correlates with better hydration
+                        # Rough estimation: normalize to 0-100 scale
+                        # Typical range might be 500-2000 for magnitude
+                        hydration = min(100, max(0, ((magnitude - 500) / 1500) * 100))
+                        logger.info(f"Estimated hydration from bioimpedance: {hydration:.0f}% (magnitude: {magnitude})")
+            except Exception as e:
+                logger.debug(f"Could not estimate hydration from bioimpedance: {e}")
+        
         if hydration is None:
             return "Hydration data is not currently available. This metric requires bioimpedance sensing."
             
@@ -1336,7 +1353,7 @@ beast:"""
             else:
                 return f"No, your hydration level is {hydration:.0f}%, which is adequate."
         elif 'sweat' in query_lower:
-            return "Sweat rate is estimated based on activity and temperature. With hydration at {hydration:.0f}%, ensure you're replacing fluids during activity."
+            return f"Sweat rate is estimated based on activity and temperature. With hydration at {hydration:.0f}%, ensure you're replacing fluids during activity."
         elif 'electrolyte' in query_lower:
             return f"Electrolyte balance is related to hydration. Your hydration is {hydration:.0f}%. If exercising heavily, consider electrolyte replacement."
         else:
