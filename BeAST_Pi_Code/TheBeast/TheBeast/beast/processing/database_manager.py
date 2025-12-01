@@ -270,6 +270,64 @@ class DatabaseManager:
             return row['session_id'] if row else None
 
     # ==================== Sensor Queries ====================
+    
+    def get_sensor_data_at(self, sensor_type: str, minutes_ago: int = 0) -> Optional[Dict[str, Any]]:
+        """
+        Get sensor data at a specific time in the past.
+        
+        Args:
+            sensor_type: Type of sensor (ppg, eeg, temp, ambient, etc.)
+            minutes_ago: How many minutes in the past (0 = most recent)
+            
+        Returns:
+            Dict with 'data', 'timestamp', and sensor-specific parsed fields
+        """
+        try:
+            from datetime import timedelta
+            with self._lock:
+                conn = self._get_connection()
+                cursor = conn.cursor()
+                cutoff = datetime.now() - timedelta(minutes=minutes_ago)
+                cursor.execute(
+                    """
+                    SELECT sensor_data, timestamp
+                    FROM sensor_data
+                    WHERE sensor_type=? AND timestamp <= ?
+                    ORDER BY timestamp DESC
+                    LIMIT 1
+                    """,
+                    (sensor_type, cutoff)
+                )
+                row = cursor.fetchone()
+                if not row:
+                    return None
+                    
+                # Parse the JSON data
+                data = json.loads(row['sensor_data']) if isinstance(row['sensor_data'], str) else row['sensor_data']
+                
+                result = {
+                    'sensor_type': sensor_type,
+                    'data': data,
+                    'timestamp': row['timestamp']
+                }
+                
+                # Add sensor-specific parsed fields
+                if sensor_type == 'ppg' and isinstance(data, (list, tuple)):
+                    result['heart_rate'] = data[0] if len(data) > 0 else None
+                    result['spo2'] = data[1] if len(data) > 1 else None
+                elif sensor_type == 'temp' and isinstance(data, (list, tuple)):
+                    result['core_temp'] = data[0] if len(data) > 0 else None
+                    result['skin_temp'] = data[1] if len(data) > 1 else None
+                elif sensor_type == 'ambient' and isinstance(data, (list, tuple)):
+                    result['ambient_temp'] = data[0] if len(data) > 0 else None
+                    result['humidity'] = data[1] if len(data) > 1 else None
+                    
+                return result
+                
+        except Exception as e:
+            logger.error(f"Failed sensor query for {sensor_type}: {e}", exc_info=True)
+            return None
+    
     def get_heart_rate_at(self, minutes_ago: int = 0) -> Optional[Dict[str, Any]]:
         """Return the latest heart rate at or before now - minutes_ago.
         Uses `sensor_data` table rows where sensor_type='ppg' and expects

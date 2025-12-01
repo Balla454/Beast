@@ -1337,16 +1337,40 @@ BeAST:"""
         
         # Extract time mentions
         minutes_match = re.search(r'(\d+)\s*minutes?\s*ago', query_lower)
-        if minutes_match and 'heart' in query_lower and self.database:
+        if minutes_match and self.database:
             try:
                 minutes = int(minutes_match.group(1))
-                result = self.database.get_heart_rate_at(minutes_ago=minutes)
-                if result and result.get('heart_rate') is not None:
-                    ts = result.get('timestamp')
-                    hr = result['heart_rate']
-                    return f"Your heart rate {minutes} minutes ago was {hr:.0f} BPM (timestamp: {ts})."
-                else:
-                    return "I couldn't find a heart rate reading for that time window in the local data."
+                
+                # Heart rate queries
+                if 'heart' in query_lower or 'hr' in query_lower or 'pulse' in query_lower:
+                    result = self.database.get_sensor_data_at('ppg', minutes_ago=minutes)
+                    if result and result.get('heart_rate') is not None:
+                        ts = result.get('timestamp')
+                        hr = result['heart_rate']
+                        return f"Your heart rate {minutes} minutes ago was {hr:.0f} BPM (timestamp: {ts})."
+                    else:
+                        return "I couldn't find a heart rate reading for that time window in the local data."
+                
+                # Temperature queries
+                elif 'temp' in query_lower or 'temperature' in query_lower:
+                    result = self.database.get_sensor_data_at('temp', minutes_ago=minutes)
+                    if result and result.get('core_temp') is not None:
+                        ts = result.get('timestamp')
+                        temp = result['core_temp']
+                        return f"Your core temperature {minutes} minutes ago was {temp:.1f}°F (timestamp: {ts})."
+                    else:
+                        return "I couldn't find a temperature reading for that time window."
+                
+                # Oxygen/SpO2 queries
+                elif 'oxygen' in query_lower or 'spo2' in query_lower or 'saturation' in query_lower:
+                    result = self.database.get_sensor_data_at('ppg', minutes_ago=minutes)
+                    if result and result.get('spo2') is not None:
+                        ts = result.get('timestamp')
+                        spo2 = result['spo2']
+                        return f"Your blood oxygen (SpO2) {minutes} minutes ago was {spo2:.0f}% (timestamp: {ts})."
+                    else:
+                        return "I couldn't find an oxygen saturation reading for that time window."
+                
             except Exception as e:
                 logger.error(f"Trend query heart rate lookup failed: {e}")
                 # Fall through to existing trend responses
