@@ -1841,6 +1841,18 @@ BeAST:"""
             # Get user health data
             health_data = self._get_user_health_context()
             
+            # Check for rule-based queries first (historical queries, specific metrics, etc.)
+            # These bypass the LLM for faster, more accurate responses
+            query_lower = question.lower()
+            
+            # Historical time-based queries (e.g., "heart rate 30 minutes ago")
+            if 'ago' in query_lower or 'minutes ago' in query_lower or 'hour ago' in query_lower:
+                response = self._handle_trend_query(query_lower, health_data)
+                elapsed = time.time() - start_time
+                logger.info(f"Query processed (rule-based) in {elapsed:.2f}s")
+                return response
+            
+            # Otherwise use RAG with LLM
             # Retrieve relevant knowledge
             knowledge = self._retrieve_knowledge(question)
             context = " ".join(knowledge)
