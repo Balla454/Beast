@@ -1514,6 +1514,54 @@ beast:"""
             }
             return word_map.get(word.lower(), None)
         
+        # Helper to calculate stress score from heart rate
+        def calc_stress_from_hr(hr: float) -> float:
+            if hr > 100:
+                return 70
+            elif hr > 85:
+                return 50
+            elif 60 <= hr <= 85:
+                return 30
+            else:
+                return 20
+        
+        # Check for stress trend queries first
+        if any(w in query_lower for w in ['stress', 'stressed', 'anxious']):
+            # Extract time period
+            time_period = None
+            if 'past hour' in query_lower or 'last hour' in query_lower:
+                time_period = 60
+            elif 'hour' in query_lower or re.search(r'(one|an?|\d+)\s*hour', query_lower):
+                match = re.search(r'(\d+)\s*hour', query_lower)
+                time_period = int(match.group(1)) * 60 if match else 60
+            
+            if time_period and self.database:
+                try:
+                    # Get heart rate data from start and end of time period
+                    hr_now = self.database.get_sensor_data_at('ppg', minutes_ago=0)
+                    hr_then = self.database.get_sensor_data_at('ppg', minutes_ago=time_period)
+                    
+                    if hr_now and hr_then and hr_now.get('heart_rate') and hr_then.get('heart_rate'):
+                        hr_current = hr_now['heart_rate']
+                        hr_past = hr_then['heart_rate']
+                        
+                        stress_current = calc_stress_from_hr(hr_current)
+                        stress_past = calc_stress_from_hr(hr_past)
+                        
+                        stress_change = stress_current - stress_past
+                        
+                        if abs(stress_change) < 10:
+                            return f"Your stress level has remained stable over the past hour. Current stress index: {stress_current:.0f}/100 (heart rate: {hr_current:.0f} BPM)."
+                        elif stress_change > 0:
+                            return f"Your stress level has increased in the past hour. Was {stress_past:.0f}/100 ({hr_past:.0f} BPM), now {stress_current:.0f}/100 ({hr_current:.0f} BPM). Change: +{stress_change:.0f} points."
+                        else:
+                            return f"Your stress level has decreased in the past hour. Was {stress_past:.0f}/100 ({hr_past:.0f} BPM), now {stress_current:.0f}/100 ({hr_current:.0f} BPM). Change: {stress_change:.0f} points."
+                    else:
+                        return "I don't have sufficient heart rate data to assess stress changes over that time period."
+                except Exception as e:
+                    logger.error(f"Stress trend query failed: {e}")
+                    return "I couldn't retrieve stress data for that time period."
+        
         # Extract time mentions - support both digits and words
         minutes_match = re.search(r'(one|two|three|four|five|six|seven|eight|nine|ten|fifteen|twenty|thirty|forty|fifty|sixty|an?|\d+)\s*minutes?\s*ago', query_lower)
         if minutes_match and self.database:
