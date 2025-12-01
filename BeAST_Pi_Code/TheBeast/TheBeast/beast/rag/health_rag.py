@@ -1178,6 +1178,22 @@ beast:"""
         alertness = health_data.get('alertness')
         fatigue = health_data.get('fatigue')
         
+        # Alertness is a derived metric, estimate from heart rate if not available
+        if alertness is None and self.database:
+            try:
+                ppg_result = self.database.get_sensor_data_at('ppg', minutes_ago=0)
+                if ppg_result and ppg_result.get('heart_rate'):
+                    hr = ppg_result['heart_rate']
+                    # Rough estimation based on HR
+                    if 60 <= hr <= 100:
+                        alertness = 65
+                    elif hr > 100:
+                        alertness = 75
+                    else:
+                        alertness = 45
+            except Exception as e:
+                logger.error(f"Failed to estimate alertness: {e}")
+        
         if alertness is None:
             return "Alertness data is not currently available."
             
@@ -1314,6 +1330,19 @@ beast:"""
     def _handle_activity_query(self, query_lower: str, health_data: Dict) -> str:
         """Handle activity/motion queries"""
         motion = health_data.get('motion_magnitude')
+        
+        # Try to fetch from database if not in health_data
+        if motion is None and self.database:
+            try:
+                imu_result = self.database.get_sensor_data_at('imu', minutes_ago=0)
+                if imu_result and imu_result.get('data'):
+                    imu_data = imu_result['data']
+                    # IMU data format: [accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z]
+                    if isinstance(imu_data, (list, tuple)) and len(imu_data) >= 3:
+                        import math
+                        motion = math.sqrt(imu_data[0]**2 + imu_data[1]**2 + imu_data[2]**2)
+            except Exception as e:
+                logger.error(f"Failed to fetch IMU data from database: {e}")
         
         if motion is None:
             return "Activity data is not currently available. IMU sensors needed."
