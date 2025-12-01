@@ -825,7 +825,7 @@ beast:"""
         # =====================================================================
         # HEART RATE / CARDIOVASCULAR
         # =====================================================================
-        if any(w in query_lower for w in ['heart rate', 'heartrate', 'pulse', 'bpm', 'hr ', 'my hr', 'heart beat', 'beating']):
+        if any(w in query_lower for w in ['heart rate', 'heartrate', 'pulse', 'bpm', 'hr ', 'my hr', 'heart beat', 'beating', 'cardiovascular']):
             return self._handle_heart_rate_query(query_lower, health_data)
             
         # =====================================================================
@@ -855,7 +855,7 @@ beast:"""
         # =====================================================================
         # COGNITIVE LOAD
         # =====================================================================
-        if any(w in query_lower for w in ['cognitive', 'mental load', 'mental burden', 'cognitive load', 'cognitive performance', 'thinking']):
+        if any(w in query_lower for w in ['cognitive', 'mental load', 'mental burden', 'cognitive load', 'cognitive performance', 'thinking', 'mental', 'brain']):
             return self._handle_cognitive_query(query_lower, health_data)
             
         # =====================================================================
