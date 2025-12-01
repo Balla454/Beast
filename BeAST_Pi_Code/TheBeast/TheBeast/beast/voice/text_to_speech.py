@@ -287,6 +287,33 @@ class TextToSpeech:
             
             logger.info(f"Speech generated, playing...")
             
+            # Add a small silence at the beginning to prevent fade-in cutting off first word
+            try:
+                import wave
+                import struct
+                
+                # Read the generated WAV file
+                with wave.open(tmp_path, 'rb') as wav_in:
+                    params = wav_in.getparams()
+                    frames = wav_in.readframes(wav_in.getnframes())
+                
+                # Create new WAV with 100ms silence prepended
+                silence_duration = 0.1  # 100ms
+                silence_samples = int(params.framerate * silence_duration)
+                silence_bytes = b'\x00' * (silence_samples * params.sampwidth * params.nchannels)
+                
+                # Write to temp file with silence
+                tmp_path_with_silence = tmp_path + '_silence.wav'
+                with wave.open(tmp_path_with_silence, 'wb') as wav_out:
+                    wav_out.setparams(params)
+                    wav_out.writeframes(silence_bytes + frames)
+                
+                # Replace original with silenced version
+                os.rename(tmp_path_with_silence, tmp_path)
+                logger.info("Added 100ms silence at start to prevent fade-in")
+            except Exception as e:
+                logger.warning(f"Could not add silence padding: {e}")
+            
             # Try to play on available devices
             # Get list of devices
             import re
@@ -311,7 +338,8 @@ class TextToSpeech:
             for device in devices:
                 try:
                     logger.info(f"Attempting playback on {device}")
-                    aplay_cmd = ['aplay', '-D', device, '-q', '--disable-softvol', tmp_path]
+                    # Use larger buffer to prevent fade-in
+                    aplay_cmd = ['aplay', '-D', device, '-q', '--disable-softvol', '--buffer-size=8192', tmp_path]
                     result = subprocess.run(
                         aplay_cmd,
                         timeout=10,
