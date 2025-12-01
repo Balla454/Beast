@@ -702,7 +702,7 @@ class HealthRAG:
             if health_items:
                 health_str = "Current readings: " + ", ".join(health_items) + ".\n"
                 
-        prompt = f"""You are BeAST, a health monitoring assistant. Be concise and helpful.
+        prompt = f"""You are BeAST, a health monitoring assistant. Be concise and helpful. Do not use emojis.
 
 {health_str}
 Knowledge: {context[:500]}
@@ -1234,7 +1234,7 @@ BeAST:"""
             
         if hydration > 80:
             status = "well hydrated"
-            advice = "Great hydration status. Keep it up!"
+            advice = "Hydration status is optimal."
         elif hydration > 60:
             status = "adequately hydrated"
             advice = "Your hydration is acceptable."
