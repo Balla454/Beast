@@ -338,11 +338,11 @@ class TextToSpeech:
             for device in devices:
                 try:
                     logger.info(f"Attempting playback on {device}")
-                    # Use larger buffer to prevent fade-in, shorter timeout to prevent hangs
+                    # Use larger buffer to prevent fade-in, longer timeout for complete playback
                     aplay_cmd = ['aplay', '-D', device, '-q', '--disable-softvol', '--buffer-size=8192', tmp_path]
                     result = subprocess.run(
                         aplay_cmd,
-                        timeout=6,
+                        timeout=15,
                         capture_output=True
                     )
                     if result.returncode == 0:
