@@ -198,7 +198,7 @@ class WakeWordDetector:
         # Clamp sensitivity
         s = max(0.0, min(1.0, float(self.sensitivity)))
         self._energy_threshold = int(base_max - (base_max - base_min) * s)
-        self._consecutive_frames = 3  # Require multiple loud frames in a row
+        self._consecutive_frames = 8  # Require multiple loud frames in a row (increased to reduce false triggers)
         self._loud_frame_count = 0
         logger.info(f"Using simple energy-based voice detection (threshold: {self._energy_threshold}, sensitivity: {s})")
     

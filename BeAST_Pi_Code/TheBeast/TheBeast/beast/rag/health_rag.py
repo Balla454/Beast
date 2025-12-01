@@ -1036,22 +1036,22 @@ beast:"""
             
             if 'fever' in query_lower:
                 if temp_f > 100.4:
-                    parts.append(f"Yes, your temperature of {temp_f:.1f}°F ({temp_c:.1f}°C) indicates a fever")
+                    parts.append(f"Yes, your temperature of {temp_f:.1f} degrees Fahrenheit indicates a fever")
                 elif temp_f > 99.5:
-                    parts.append(f"Your temperature is slightly elevated at {temp_f:.1f}°F ({temp_c:.1f}°C) - borderline fever")
+                    parts.append(f"Your temperature is slightly elevated at {temp_f:.1f} degrees Fahrenheit, borderline fever")
                 else:
-                    parts.append(f"No, your temperature is {temp_f:.1f}°F ({temp_c:.1f}°C), which is normal")
+                    parts.append(f"No, your temperature is {temp_f:.1f} degrees Fahrenheit, which is normal")
             elif 'normal' in query_lower or 'elevated' in query_lower:
                 if temp_f < 97:
-                    parts.append(f"Your core temperature is {temp_f:.1f}°F ({temp_c:.1f}°C), below normal range")
+                    parts.append(f"Your core temperature is {temp_f:.1f} degrees Fahrenheit, below normal range")
                 elif temp_f > 99.5:
-                    parts.append(f"Your core temperature is {temp_f:.1f}°F ({temp_c:.1f}°C), elevated")
+                    parts.append(f"Your core temperature is {temp_f:.1f} degrees Fahrenheit, elevated")
                 else:
-                    parts.append(f"Your core temperature is {temp_f:.1f}°F ({temp_c:.1f}°C), normal")
+                    parts.append(f"Your core temperature is {temp_f:.1f} degrees Fahrenheit, normal")
             elif 'skin' in query_lower:
-                parts.append(f"Core temperature is {temp_f:.1f}°F ({temp_c:.1f}°C). Skin temperature is typically 2-4°F lower.")
+                parts.append(f"Core temperature is {temp_f:.1f} degrees Fahrenheit. Skin temperature is typically 2-4 degrees lower.")
             else:
-                parts.append(f"Your body temperature is {temp_f:.1f}°F ({temp_c:.1f}°C)")
+                parts.append(f"Your body temperature is {temp_f:.1f} degrees Fahrenheit")
                 if temp_f > 99.5:
                     parts.append("which is elevated")
                 elif temp_f < 97:
@@ -1060,7 +1060,7 @@ beast:"""
                     parts.append("which is normal")
                     
         if ambient is not None and ('ambient' in query_lower or 'room' in query_lower or len(parts) == 0):
-            parts.append(f"Ambient temperature is {ambient:.1f}°C")
+            parts.append(f"Ambient temperature is {ambient:.1f} degrees Fahrenheit")
             
         heat_index = health_data.get('heat_index')
         if heat_index is not None and heat_index > 30:
@@ -1687,8 +1687,10 @@ beast:"""
         # Check temperature
         core_temp = health_data.get('core_temp')
         if core_temp is not None:
-            if core_temp > 38 or core_temp < 35.5:
-                alerts.append(f"Body temperature ({core_temp:.1f}°C) is abnormal")
+            # Database stores temperature in Fahrenheit
+            temp_f = core_temp
+            if temp_f > 100.4 or temp_f < 96.8:
+                alerts.append(f"Body temperature ({temp_f:.1f} degrees Fahrenheit) is abnormal")
             else:
                 normal.append("temperature")
                 
