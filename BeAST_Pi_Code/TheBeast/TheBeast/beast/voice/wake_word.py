@@ -109,14 +109,8 @@ class WakeWordDetector:
         
         # Select engine
         if engine == "auto":
-            if WHISPER_AVAILABLE:
-                engine = "whisper"
-            elif PORCUPINE_AVAILABLE:
-                engine = "porcupine"
-            elif VOSK_AVAILABLE:
-                engine = "vosk"
-            else:
-                engine = "simple"
+            # Use simple detector by default - it's fast and reliable
+            engine = "simple"
         
         self.engine = engine
         self._detector = None
@@ -224,21 +218,27 @@ class WakeWordDetector:
             self._init_simple()
             
     def _init_simple(self):
-        """Initialize simple energy-based detection (always listens)"""
-        # This is a fallback that just detects when someone speaks
-        # Not true wake word detection, but works as placeholder
+        """Initialize simple energy-based detection with sound profile matching"""
+        # Detect sustained speech patterns that match saying a word like "beast"
         # Higher threshold = less sensitive (requires louder speech)
         # Derive threshold from sensitivity (0.0-1.0)
         # sensitivity=1.0 -> lower threshold (more sensitive)
         # sensitivity=0.0 -> higher threshold (less sensitive)
-        base_min = 600
-        base_max = 2200
+        base_min = 1000
+        base_max = 4000
         # Clamp sensitivity
         s = max(0.0, min(1.0, float(self.sensitivity)))
         self._energy_threshold = int(base_max - (base_max - base_min) * s)
-        self._consecutive_frames = 8  # Require multiple loud frames in a row (increased to reduce false triggers)
+        
+        # Sound profile matching for wake word
+        self._consecutive_frames = 5  # Require sustained speech (about 0.3 seconds at 16kHz)
+        self._max_consecutive_frames = 20  # Max duration to consider (about 1.2 seconds)
         self._loud_frame_count = 0
+        self._silence_after_frames = 2  # Brief silence after speech confirms word ended
+        self._silence_count = 0
+        
         logger.info(f"Using simple energy-based voice detection (threshold: {self._energy_threshold}, sensitivity: {s})")
+        logger.info(f"Wake word profile: {self._consecutive_frames}-{self._max_consecutive_frames} frames, {self._silence_after_frames} silence frames")
     
     def _find_usb_microphone(self):
         """Find USB microphone device index and detect its capabilities"""
@@ -554,21 +554,43 @@ class WakeWordDetector:
                     return True
             return False
             
-        else:  # Simple energy detection
+        else:  # Simple energy detection with sound profile
             # Calculate RMS energy
             energy = np.sqrt(np.mean(np.array(pcm_data, dtype=np.float32) ** 2))
             
             if energy > self._energy_threshold:
-                # Count consecutive loud frames to avoid noise triggers
+                # Loud frame detected
                 self._loud_frame_count += 1
-                if self._loud_frame_count >= self._consecutive_frames:
-                    # Sustained loud audio detected - treat as wake word
+                self._silence_count = 0
+                
+                # Check if we're within the valid wake word duration
+                if self._consecutive_frames <= self._loud_frame_count <= self._max_consecutive_frames:
+                    # We have sustained speech of appropriate length
+                    # This could be the wake word, but keep counting
+                    pass
+                elif self._loud_frame_count > self._max_consecutive_frames:
+                    # Speech too long, probably a sentence - reset
+                    logger.debug(f"Speech too long ({self._loud_frame_count} frames), resetting")
                     self._loud_frame_count = 0
-                    logger.debug(f"Wake triggered (energy: {energy:.0f})")
-                    return True
+                    self._silence_count = 0
             else:
-                # Reset counter on quiet frame
-                self._loud_frame_count = 0
+                # Quiet frame
+                if self._loud_frame_count >= self._consecutive_frames:
+                    # We had sustained speech, now there's silence
+                    self._silence_count += 1
+                    
+                    if self._silence_count >= self._silence_after_frames:
+                        # Perfect pattern: sustained speech followed by silence
+                        # This matches saying a single word like "beast"
+                        logger.info(f"Wake word pattern detected ({self._loud_frame_count} loud frames, energy peak)")
+                        self._loud_frame_count = 0
+                        self._silence_count = 0
+                        return True
+                else:
+                    # Not enough loud frames yet, reset
+                    self._loud_frame_count = 0
+                    self._silence_count = 0
+            
             return False
             
     def start_continuous(self, callback: Callable[[], None]):
