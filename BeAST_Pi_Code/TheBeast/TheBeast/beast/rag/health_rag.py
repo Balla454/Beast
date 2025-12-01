@@ -2203,13 +2203,17 @@ beast:"""
             # Use LLM for advice/complex queries
             if needs_llm:
                 try:
-                    context = self._retrieve_relevant_context(question)
-                    response = self._generate_with_pipeline(question, context, health_data)
+                    # Retrieve relevant knowledge
+                    knowledge_docs = self._retrieve_knowledge(question, top_k=3)
+                    context = "\n".join(knowledge_docs) if knowledge_docs else ""
+                    
+                    # Generate response using LLM
+                    response = self._generate_response(question, context, health_data)
                     elapsed = time.time() - start_time
-                    logger.info(f"Query processed (LLM pipeline) in {elapsed:.2f}s")
+                    logger.info(f"Query processed (LLM) in {elapsed:.2f}s")
                     return response
                 except Exception as e:
-                    logger.warning(f"LLM pipeline failed, falling back to rule-based: {e}")
+                    logger.warning(f"LLM generation failed, falling back to rule-based: {e}")
                     # Fall through to rule-based handling
             
             # Historical time-based queries (e.g., "heart rate 30 minutes ago")
@@ -2225,8 +2229,9 @@ beast:"""
             # If we got the default "I'm here to help" response, try LLM instead
             if "I'm here to help with your health questions" in response:
                 try:
-                    context = self._retrieve_relevant_context(question)
-                    llm_response = self._generate_with_pipeline(question, context, health_data)
+                    knowledge_docs = self._retrieve_knowledge(question, top_k=3)
+                    context = "\n".join(knowledge_docs) if knowledge_docs else ""
+                    llm_response = self._generate_response(question, context, health_data)
                     elapsed = time.time() - start_time
                     logger.info(f"Query processed (LLM fallback) in {elapsed:.2f}s")
                     return llm_response
