@@ -152,7 +152,7 @@ class WakeWordDetector:
             self._check_interval = 1.0  # Check every 1 second (reduced frequency)
             self._last_check_time = time.time()
             self._loud_frame_count = 0
-            self._consecutive_frames = 5  # Require 5 consecutive loud frames before transcribing
+            self._consecutive_frames = 3  # Require 3 consecutive loud frames before transcribing (reduced from 5)
             
             logger.info("Faster Whisper wake word detector initialized (tiny.en)")
             
@@ -513,8 +513,10 @@ class WakeWordDetector:
                     # Check if wake word is in transcription
                     text = " ".join([segment.text for segment in segments]).lower().strip()
                     
+                    logger.info(f"Whisper wake word transcribed: '{text}'")
+                    
                     if self.wake_word in text:
-                        logger.debug(f"Wake word detected in: '{text}'")
+                        logger.info(f"Wake word '{self.wake_word}' detected!")
                         self._audio_buffer = []
                         self._loud_frame_count = 0
                         self._last_check_time = current_time
