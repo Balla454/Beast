@@ -2190,14 +2190,15 @@ beast:"""
                 'ways to', 'methods', 'techniques', 'tips for', 'help me',
                 'advice', 'recommend', 'suggest', 'improve', 'reduce', 'increase',
                 'lower', 'raise', 'better', 'manage', 'deal with', 'handle',
-                'exercises', 'breathing', 'meditation', 'relaxation', 'strategies'
+                'exercises', 'breathing', 'meditation', 'relaxation', 'strategies',
+                'get more', 'become more', 'be more', 'get less', 'be less'
             ]
             
             needs_llm = any(keyword in query_lower for keyword in advice_keywords)
             
             # Also use LLM if it's a complex question (multiple clauses, why/explain)
             if not needs_llm:
-                complex_indicators = ['why', 'explain', 'tell me about', 'what is the difference', 'compare']
+                complex_indicators = ['why', 'explain', 'tell me about', 'what is the difference', 'compare', 'what causes']
                 needs_llm = any(indicator in query_lower for indicator in complex_indicators)
             
             # Use LLM for advice/complex queries
