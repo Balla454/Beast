@@ -148,9 +148,11 @@ class WakeWordDetector:
             # Audio buffer settings for wake word detection
             self._audio_buffer = []
             self._buffer_duration = 2.0  # seconds of audio to accumulate
-            self._energy_threshold = 1400  # Require voice activity before transcribing
-            self._check_interval = 0.5  # Check every 0.5 seconds
+            self._energy_threshold = 2000  # Higher threshold to reduce false triggers
+            self._check_interval = 1.0  # Check every 1 second (reduced frequency)
             self._last_check_time = time.time()
+            self._loud_frame_count = 0
+            self._consecutive_frames = 5  # Require 5 consecutive loud frames before transcribing
             
             logger.info("Faster Whisper wake word detector initialized (tiny.en)")
             
@@ -468,48 +470,62 @@ class WakeWordDetector:
             # Accumulate audio in buffer
             self._audio_buffer.extend(pcm_data)
             
-            # Check if enough time has passed and we have enough audio
+            # Calculate energy of current frame
+            audio_array = np.array(pcm_data, dtype=np.float32)
+            energy = np.sqrt(np.mean(audio_array ** 2))
+            
+            # Count consecutive loud frames
+            if energy > self._energy_threshold:
+                self._loud_frame_count += 1
+            else:
+                self._loud_frame_count = 0
+                # Trim buffer if no voice activity
+                max_buffer_samples = int(self._buffer_duration * self.sample_rate)
+                if len(self._audio_buffer) > max_buffer_samples:
+                    self._audio_buffer = self._audio_buffer[-max_buffer_samples:]
+                return False
+            
+            # Only transcribe if we have sustained voice activity
             current_time = time.time()
             buffer_samples = len(self._audio_buffer)
             buffer_seconds = buffer_samples / self.sample_rate
             
-            if current_time - self._last_check_time >= self._check_interval and buffer_seconds >= 1.0:
-                # Calculate energy to see if there's voice activity
-                audio_array = np.array(self._audio_buffer, dtype=np.float32)
-                energy = np.sqrt(np.mean(audio_array ** 2))
+            if (self._loud_frame_count >= self._consecutive_frames and 
+                current_time - self._last_check_time >= self._check_interval and 
+                buffer_seconds >= 1.0):
                 
-                if energy > self._energy_threshold:
-                    # There's voice activity, transcribe it
-                    try:
-                        # Convert to float32 normalized audio for Whisper
-                        audio_float = audio_array / 32768.0
-                        
-                        # Transcribe the buffer
-                        segments, info = self._detector.transcribe(
-                            audio_float,
-                            language="en",
-                            beam_size=1,
-                            best_of=1,
-                            temperature=0.0,
-                            vad_filter=False
-                        )
-                        
-                        # Check if wake word is in transcription
-                        text = " ".join([segment.text for segment in segments]).lower().strip()
-                        
-                        if self.wake_word in text:
-                            logger.debug(f"Wake word detected in: '{text}'")
-                            self._audio_buffer = []  # Clear buffer
-                            self._last_check_time = current_time
-                            return True
-                    except Exception as e:
-                        logger.debug(f"Whisper transcription error: {e}")
+                # Transcribe the buffer
+                try:
+                    # Convert to float32 normalized audio for Whisper
+                    buffer_array = np.array(self._audio_buffer, dtype=np.float32)
+                    audio_float = buffer_array / 32768.0
+                    
+                    # Transcribe
+                    segments, info = self._detector.transcribe(
+                        audio_float,
+                        language="en",
+                        beam_size=1,
+                        best_of=1,
+                        temperature=0.0,
+                        vad_filter=False
+                    )
+                    
+                    # Check if wake word is in transcription
+                    text = " ".join([segment.text for segment in segments]).lower().strip()
+                    
+                    if self.wake_word in text:
+                        logger.debug(f"Wake word detected in: '{text}'")
+                        self._audio_buffer = []
+                        self._loud_frame_count = 0
+                        self._last_check_time = current_time
+                        return True
+                except Exception as e:
+                    logger.debug(f"Whisper transcription error: {e}")
                 
-                # Update last check time and trim buffer to keep last 2 seconds
+                # Reset counters after transcription attempt
                 self._last_check_time = current_time
-                max_buffer_samples = int(self._buffer_duration * self.sample_rate)
-                if buffer_samples > max_buffer_samples:
-                    self._audio_buffer = self._audio_buffer[-max_buffer_samples:]
+                self._loud_frame_count = 0
+                self._audio_buffer = []
             
             return False
         
