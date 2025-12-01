@@ -287,7 +287,22 @@ class DatabaseManager:
             with self._lock:
                 conn = self._get_connection()
                 cursor = conn.cursor()
-                cutoff = datetime.now() - timedelta(minutes=minutes_ago)
+                
+                # Get the most recent timestamp for this sensor type
+                cursor.execute(
+                    """
+                    SELECT MAX(timestamp) FROM sensor_data WHERE sensor_type=?
+                    """,
+                    (sensor_type,)
+                )
+                max_time_row = cursor.fetchone()
+                if not max_time_row or not max_time_row[0]:
+                    return None
+                
+                # Parse the max timestamp and subtract the requested minutes
+                max_timestamp = datetime.fromisoformat(max_time_row[0])
+                cutoff = max_timestamp - timedelta(minutes=minutes_ago)
+                
                 cursor.execute(
                     """
                     SELECT sensor_data, timestamp
@@ -296,7 +311,7 @@ class DatabaseManager:
                     ORDER BY timestamp DESC
                     LIMIT 1
                     """,
-                    (sensor_type, cutoff)
+                    (sensor_type, cutoff.isoformat())
                 )
                 row = cursor.fetchone()
                 if not row:
@@ -338,7 +353,21 @@ class DatabaseManager:
             with self._lock:
                 conn = self._get_connection()
                 cursor = conn.cursor()
-                cutoff = datetime.now() - timedelta(minutes=minutes_ago)
+                
+                # Get the most recent timestamp for PPG data
+                cursor.execute(
+                    """
+                    SELECT MAX(timestamp) FROM sensor_data WHERE sensor_type='ppg'
+                    """
+                )
+                max_time_row = cursor.fetchone()
+                if not max_time_row or not max_time_row[0]:
+                    return None
+                
+                # Parse the max timestamp and subtract the requested minutes
+                max_timestamp = datetime.fromisoformat(max_time_row[0])
+                cutoff = max_timestamp - timedelta(minutes=minutes_ago)
+                
                 cursor.execute(
                     """
                     SELECT sensor_data, timestamp
@@ -347,7 +376,7 @@ class DatabaseManager:
                     ORDER BY timestamp DESC
                     LIMIT 1
                     """,
-                    (cutoff,)
+                    (cutoff.isoformat(),)
                 )
                 row = cursor.fetchone()
                 if not row:
@@ -383,7 +412,21 @@ class DatabaseManager:
             with self._lock:
                 conn = self._get_connection()
                 cursor = conn.cursor()
-                cutoff = datetime.now() - timedelta(minutes=minutes)
+                
+                # Get the most recent timestamp for this sensor type
+                cursor.execute(
+                    """
+                    SELECT MAX(timestamp) FROM sensor_data WHERE sensor_type=?
+                    """,
+                    (sensor_type,)
+                )
+                max_time_row = cursor.fetchone()
+                if not max_time_row or not max_time_row[0]:
+                    return None
+                
+                # Parse the max timestamp and calculate the time window
+                max_timestamp = datetime.fromisoformat(max_time_row[0])
+                cutoff = max_timestamp - timedelta(minutes=minutes)
                 
                 cursor.execute(
                     """
@@ -392,7 +435,7 @@ class DatabaseManager:
                     WHERE sensor_type=? AND timestamp >= ?
                     ORDER BY timestamp ASC
                     """,
-                    (sensor_type, cutoff)
+                    (sensor_type, cutoff.isoformat())
                 )
                 rows = cursor.fetchall()
                 
