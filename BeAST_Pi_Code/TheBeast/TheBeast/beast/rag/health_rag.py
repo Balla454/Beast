@@ -1104,6 +1104,15 @@ beast:"""
         hrv = health_data.get('hr_variability') or health_data.get('hrv')
         hr = health_data.get('heart_rate')
         
+        # Try to fetch heart rate from database if not available
+        if hr is None and self.database:
+            try:
+                ppg_result = self.database.get_sensor_data_at('ppg', minutes_ago=0)
+                if ppg_result and ppg_result.get('heart_rate'):
+                    hr = ppg_result['heart_rate']
+            except Exception as e:
+                logger.error(f"Failed to fetch heart rate for stress assessment: {e}")
+        
         # Calculate composite stress score
         stress_score = None
         factors = []
@@ -1117,9 +1126,22 @@ beast:"""
             stress_score = (stress_score or 0) + hr_stress * 0.3
             if hr > 90:
                 factors.append(f"elevated heart rate at {hr:.0f} BPM")
+        
+        # Even without cognitive load, can estimate from HR alone
+        if stress_score is None and hr is not None:
+            if hr > 100:
+                stress_score = 70
+                factors.append(f"elevated heart rate at {hr:.0f} BPM")
+            elif hr > 85:
+                stress_score = 50
+                factors.append(f"moderately elevated heart rate at {hr:.0f} BPM")
+            elif 60 <= hr <= 85:
+                stress_score = 30
+            else:
+                stress_score = 20
                 
         if stress_score is None:
-            return "I don't have enough data to assess your stress level. Cognitive and heart rate metrics are needed."
+            return "I don't have enough data to assess your stress level. Heart rate or cognitive metrics are needed."
             
         # Normalize to 0-100
         stress_score = min(stress_score, 100)
