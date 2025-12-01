@@ -311,7 +311,7 @@ class TextToSpeech:
             for device in devices:
                 try:
                     logger.info(f"Attempting playback on {device}")
-                    aplay_cmd = ['aplay', '-D', device, '-q', tmp_path]
+                    aplay_cmd = ['aplay', '-D', device, '-q', '--disable-softvol', tmp_path]
                     result = subprocess.run(
                         aplay_cmd,
                         timeout=10,
