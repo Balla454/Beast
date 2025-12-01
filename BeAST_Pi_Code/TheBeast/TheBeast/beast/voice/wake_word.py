@@ -5,7 +5,8 @@ Wake Word Detection for beast
 Listens continuously for the wake word "Beast" to trigger voice interaction.
 
 Supports multiple backends:
-- pvporcupine (Picovoice Porcupine) - recommended for Pi
+- whisper - uses Faster Whisper for accurate word detection (recommended)
+- pvporcupine (Picovoice Porcupine) - dedicated wake word
 - vosk - open source alternative
 - simple - basic energy-based detection (fallback)
 """
@@ -24,6 +25,7 @@ logger = logging.getLogger('beast.WakeWord')
 # Try to import wake word engines
 PORCUPINE_AVAILABLE = False
 VOSK_AVAILABLE = False
+WHISPER_AVAILABLE = False
 
 try:
     import pvporcupine
@@ -38,6 +40,13 @@ try:
     logger.info("Vosk wake word engine available")
 except ImportError:
     logger.warning("Vosk not available (pip install vosk)")
+
+try:
+    from faster_whisper import WhisperModel
+    WHISPER_AVAILABLE = True
+    logger.info("Faster Whisper wake word engine available")
+except ImportError:
+    logger.warning("Faster Whisper not available")
 
 # Audio capture
 try:
@@ -100,7 +109,9 @@ class WakeWordDetector:
         
         # Select engine
         if engine == "auto":
-            if PORCUPINE_AVAILABLE:
+            if WHISPER_AVAILABLE:
+                engine = "whisper"
+            elif PORCUPINE_AVAILABLE:
                 engine = "porcupine"
             elif VOSK_AVAILABLE:
                 engine = "vosk"
@@ -117,11 +128,36 @@ class WakeWordDetector:
         
     def _init_engine(self):
         """Initialize the selected wake word engine"""
-        if self.engine == "porcupine":
+        if self.engine == "whisper":
+            self._init_whisper()
+        elif self.engine == "porcupine":
             self._init_porcupine()
         elif self.engine == "vosk":
             self._init_vosk()
         else:
+            self._init_simple()
+            
+    def _init_whisper(self):
+        """Initialize Faster Whisper for wake word detection"""
+        try:
+            from faster_whisper import WhisperModel
+            
+            # Use tiny model for fast wake word detection
+            self._detector = WhisperModel("tiny.en", device="cpu", compute_type="int8")
+            
+            # Audio buffer settings for wake word detection
+            self._audio_buffer = []
+            self._buffer_duration = 2.0  # seconds of audio to accumulate
+            self._energy_threshold = 1400  # Require voice activity before transcribing
+            self._check_interval = 0.5  # Check every 0.5 seconds
+            self._last_check_time = time.time()
+            
+            logger.info("Faster Whisper wake word detector initialized (tiny.en)")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize Whisper wake word: {e}")
+            logger.info("Falling back to simple detector")
+            self.engine = "simple"
             self._init_simple()
             
     def _init_porcupine(self):
@@ -428,7 +464,56 @@ class WakeWordDetector:
         
     def _check_wake_word(self, pcm_data) -> bool:
         """Check if wake word is present in audio frame"""
-        if self.engine == "porcupine" and self._detector:
+        if self.engine == "whisper" and self._detector:
+            # Accumulate audio in buffer
+            self._audio_buffer.extend(pcm_data)
+            
+            # Check if enough time has passed and we have enough audio
+            current_time = time.time()
+            buffer_samples = len(self._audio_buffer)
+            buffer_seconds = buffer_samples / self.sample_rate
+            
+            if current_time - self._last_check_time >= self._check_interval and buffer_seconds >= 1.0:
+                # Calculate energy to see if there's voice activity
+                audio_array = np.array(self._audio_buffer, dtype=np.float32)
+                energy = np.sqrt(np.mean(audio_array ** 2))
+                
+                if energy > self._energy_threshold:
+                    # There's voice activity, transcribe it
+                    try:
+                        # Convert to float32 normalized audio for Whisper
+                        audio_float = audio_array / 32768.0
+                        
+                        # Transcribe the buffer
+                        segments, info = self._detector.transcribe(
+                            audio_float,
+                            language="en",
+                            beam_size=1,
+                            best_of=1,
+                            temperature=0.0,
+                            vad_filter=False
+                        )
+                        
+                        # Check if wake word is in transcription
+                        text = " ".join([segment.text for segment in segments]).lower().strip()
+                        
+                        if self.wake_word in text:
+                            logger.debug(f"Wake word detected in: '{text}'")
+                            self._audio_buffer = []  # Clear buffer
+                            self._last_check_time = current_time
+                            return True
+                    except Exception as e:
+                        logger.debug(f"Whisper transcription error: {e}")
+                
+                # Update last check time and trim buffer to keep last 2 seconds
+                self._last_check_time = current_time
+                max_buffer_samples = int(self._buffer_duration * self.sample_rate)
+                if buffer_samples > max_buffer_samples:
+                    self._audio_buffer = self._audio_buffer[-max_buffer_samples:]
+            
+            return False
+        
+        elif self.engine == "porcupine" and self._detector:
             result = self._detector.process(pcm_data)
             return result >= 0
             
