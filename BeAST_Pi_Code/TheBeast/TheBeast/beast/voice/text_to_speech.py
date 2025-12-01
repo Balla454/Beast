@@ -297,8 +297,8 @@ class TextToSpeech:
                     params = wav_in.getparams()
                     frames = wav_in.readframes(wav_in.getnframes())
                 
-                # Create new WAV with 100ms silence prepended
-                silence_duration = 0.1  # 100ms
+                # Create new WAV with 500ms silence prepended (increased from 100ms)
+                silence_duration = 0.5  # 500ms
                 silence_samples = int(params.framerate * silence_duration)
                 silence_bytes = b'\x00' * (silence_samples * params.sampwidth * params.nchannels)
                 
@@ -310,7 +310,7 @@ class TextToSpeech:
                 
                 # Replace original with silenced version
                 os.rename(tmp_path_with_silence, tmp_path)
-                logger.info("Added 100ms silence at start to prevent fade-in")
+                logger.info("Added 500ms silence at start to prevent fade-in")
             except Exception as e:
                 logger.warning(f"Could not add silence padding: {e}")
             
