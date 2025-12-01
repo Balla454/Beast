@@ -1318,9 +1318,9 @@ beast:"""
         if hydration is None and self.database:
             try:
                 bioz_result = self.database.get_sensor_data_at('bioz', minutes_ago=0)
-                if bioz_result and bioz_result.get('bioz_data'):
+                if bioz_result and bioz_result.get('data'):
                     # BioZ data is a single value (impedance magnitude)
-                    bioz_data = bioz_result['bioz_data']
+                    bioz_data = bioz_result['data']
                     magnitude = bioz_data[0] if isinstance(bioz_data, list) else bioz_data
                     # Lower bioimpedance typically indicates better hydration (more water = less resistance)
                     # Typical range: 100-200 ohms
@@ -1328,7 +1328,7 @@ beast:"""
                     hydration = min(100, max(20, 100 - ((magnitude - 100) / 100) * 40))
                     logger.info(f"Estimated hydration from bioimpedance: {hydration:.0f}% (impedance: {magnitude:.1f} ohms)")
             except Exception as e:
-                logger.debug(f"Could not estimate hydration from bioimpedance: {e}")
+                logger.error(f"Could not estimate hydration from bioimpedance: {e}")
         
         if hydration is None:
             return "Hydration data is not currently available. This metric requires bioimpedance sensing."
