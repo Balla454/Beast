@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environments
+.beast-venv/
+venv/
+
+# Data, models, logs (managed outside git)
+data/
+models/
+logs/
+*.db
+
+# OS / editor
+.DS_Store
+.vscode/
