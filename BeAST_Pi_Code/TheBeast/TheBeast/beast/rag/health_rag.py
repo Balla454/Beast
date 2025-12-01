@@ -1337,6 +1337,19 @@ BeAST:"""
         
         # Extract time mentions
         minutes_match = re.search(r'(\d+)\s*minutes?\s*ago', query_lower)
+        if minutes_match and 'heart' in query_lower and self.database:
+            try:
+                minutes = int(minutes_match.group(1))
+                result = self.database.get_heart_rate_at(minutes_ago=minutes)
+                if result and result.get('heart_rate') is not None:
+                    ts = result.get('timestamp')
+                    hr = result['heart_rate']
+                    return f"Your heart rate {minutes} minutes ago was {hr:.0f} BPM (timestamp: {ts})."
+                else:
+                    return "I couldn't find a heart rate reading for that time window in the local data."
+            except Exception as e:
+                logger.error(f"Trend query heart rate lookup failed: {e}")
+                # Fall through to existing trend responses
         
         # For now, we have 1-hour aggregates
         hr = health_data.get('heart_rate')

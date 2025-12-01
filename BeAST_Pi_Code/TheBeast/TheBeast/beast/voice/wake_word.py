@@ -190,10 +190,17 @@ class WakeWordDetector:
         # This is a fallback that just detects when someone speaks
         # Not true wake word detection, but works as placeholder
         # Higher threshold = less sensitive (requires louder speech)
-        self._energy_threshold = 1500  # Increased to reduce false triggers
+        # Derive threshold from sensitivity (0.0-1.0)
+        # sensitivity=1.0 -> lower threshold (more sensitive)
+        # sensitivity=0.0 -> higher threshold (less sensitive)
+        base_min = 600
+        base_max = 2200
+        # Clamp sensitivity
+        s = max(0.0, min(1.0, float(self.sensitivity)))
+        self._energy_threshold = int(base_max - (base_max - base_min) * s)
         self._consecutive_frames = 3  # Require multiple loud frames in a row
         self._loud_frame_count = 0
-        logger.info(f"Using simple energy-based voice detection (threshold: {self._energy_threshold})")
+        logger.info(f"Using simple energy-based voice detection (threshold: {self._energy_threshold}, sensitivity: {s})")
     
     def _find_usb_microphone(self):
         """Find USB microphone device index and detect its capabilities"""

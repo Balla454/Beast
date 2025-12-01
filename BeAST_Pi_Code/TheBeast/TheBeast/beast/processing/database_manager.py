@@ -268,6 +268,46 @@ class DatabaseManager:
             
             row = cursor.fetchone()
             return row['session_id'] if row else None
+
+    # ==================== Sensor Queries ====================
+    def get_heart_rate_at(self, minutes_ago: int = 0) -> Optional[Dict[str, Any]]:
+        """Return the latest heart rate at or before now - minutes_ago.
+        Uses `sensor_data` table rows where sensor_type='ppg' and expects
+        sensor_data json array format: [heart_rate, spo2].
+        """
+        try:
+            from datetime import timedelta
+            with self._lock:
+                conn = self._get_connection()
+                cursor = conn.cursor()
+                cutoff = datetime.now() - timedelta(minutes=minutes_ago)
+                cursor.execute(
+                    """
+                    SELECT sensor_data, timestamp
+                    FROM sensor_data
+                    WHERE sensor_type='ppg' AND timestamp <= ?
+                    ORDER BY timestamp DESC
+                    LIMIT 1
+                    """,
+                    (cutoff,)
+                )
+                row = cursor.fetchone()
+                if not row:
+                    return None
+                data = json.loads(row['sensor_data']) if isinstance(row['sensor_data'], str) else row['sensor_data']
+                hr = None
+                spo2 = None
+                if isinstance(data, (list, tuple)) and len(data) >= 1:
+                    hr = data[0]
+                    spo2 = data[1] if len(data) > 1 else None
+                return {
+                    'heart_rate': hr,
+                    'spo2': spo2,
+                    'timestamp': row['timestamp']
+                }
+        except Exception as e:
+            logger.error(f"Failed heart rate query: {e}", exc_info=True)
+            return None
             
     # ==================== Metrics Storage ====================
     
