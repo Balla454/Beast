@@ -148,7 +148,7 @@ class WakeWordDetector:
             # Audio buffer settings for wake word detection
             self._audio_buffer = []
             self._buffer_duration = 2.0  # seconds of audio to accumulate
-            self._energy_threshold = 2000  # Higher threshold to reduce false triggers
+            self._energy_threshold = 3500  # Much higher threshold to ignore background conversation
             self._check_interval = 1.0  # Check every 1 second (reduced frequency)
             self._last_check_time = time.time()
             self._loud_frame_count = 0
@@ -492,7 +492,7 @@ class WakeWordDetector:
             
             if (self._loud_frame_count >= self._consecutive_frames and 
                 current_time - self._last_check_time >= self._check_interval and 
-                buffer_seconds >= 1.0):
+                buffer_seconds >= 1.2):  # Require at least 1.2 seconds to avoid short noise
                 
                 # Transcribe the buffer
                 try:
