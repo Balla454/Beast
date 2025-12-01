@@ -811,6 +811,12 @@ BeAST:"""
         query_lower = query.lower()
         
         # =====================================================================
+        # TREND & TIME-BASED QUERIES (check FIRST before specific metrics)
+        # =====================================================================
+        if any(w in query_lower for w in ['ago', 'minutes ago', 'hour ago', 'average', 'highest', 'lowest', 'last hour', 'today', 'history', 'trend', 'changed', 'over the', 'over an', 'course of']):
+            return self._handle_trend_query(query_lower, health_data)
+        
+        # =====================================================================
         # HEART RATE / CARDIOVASCULAR
         # =====================================================================
         if any(w in query_lower for w in ['heart rate', 'heartrate', 'pulse', 'bpm', 'hr ', 'my hr', 'heart beat', 'beating']):
@@ -873,12 +879,6 @@ BeAST:"""
         # =====================================================================
         if any(w in query_lower for w in ['activity', 'active', 'steps', 'exertion', 'motion', 'movement', 'moving', 'still']):
             return self._handle_activity_query(query_lower, health_data)
-            
-        # =====================================================================
-        # TREND & TIME-BASED QUERIES
-        # =====================================================================
-        if any(w in query_lower for w in ['ago', 'minutes ago', 'hour ago', 'average', 'highest', 'lowest', 'last hour', 'today', 'history', 'trend', 'changed', 'over the']):
-            return self._handle_trend_query(query_lower, health_data)
             
         # =====================================================================
         # THRESHOLD / ALERT STATUS QUERIES
