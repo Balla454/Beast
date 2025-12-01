@@ -1335,11 +1335,28 @@ BeAST:"""
         """Handle time-based and trend queries"""
         import re
         
-        # Extract time mentions
-        minutes_match = re.search(r'(\d+)\s*minutes?\s*ago', query_lower)
+        # Helper to convert word numbers to digits
+        def word_to_number(word: str) -> int:
+            word_map = {
+                'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+                'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
+                'fifteen': 15, 'twenty': 20, 'thirty': 30, 'forty': 40,
+                'fifty': 50, 'sixty': 60, 'an': 1, 'a': 1
+            }
+            return word_map.get(word.lower(), None)
+        
+        # Extract time mentions - support both digits and words
+        minutes_match = re.search(r'(one|two|three|four|five|six|seven|eight|nine|ten|fifteen|twenty|thirty|forty|fifty|sixty|an?|\d+)\s*minutes?\s*ago', query_lower)
         if minutes_match and self.database:
             try:
-                minutes = int(minutes_match.group(1))
+                time_str = minutes_match.group(1)
+                # Try to convert word to number, or use as int
+                if time_str.isdigit():
+                    minutes = int(time_str)
+                else:
+                    minutes = word_to_number(time_str)
+                    if minutes is None:
+                        minutes = 0
                 
                 # Heart rate queries
                 if 'heart' in query_lower or 'hr' in query_lower or 'pulse' in query_lower:
