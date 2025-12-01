@@ -509,8 +509,7 @@ class SpeechToText:
                 audio,
                 language=self.language if self.language != "en" else None,
                 beam_size=1,  # Faster inference
-                vad_filter=True,  # Voice activity detection
-                vad_parameters=dict(min_silence_duration_ms=500)
+                vad_filter=False,  # Disable VAD to preserve all audio
             )
             
             # Combine all segments
@@ -521,7 +520,7 @@ class SpeechToText:
                 audio,
                 language=self.language if self.language != "en" else None,
                 beam_size=1,
-                vad_filter=True
+                vad_filter=False  # Disable VAD to preserve all audio
             )
             text = " ".join([segment.text for segment in segments]).strip()
         
