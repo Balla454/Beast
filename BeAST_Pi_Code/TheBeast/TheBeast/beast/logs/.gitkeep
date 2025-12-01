@@ -1,4 +1,0 @@
-# This directory stores BeAST log files
-# - beast.log: Main application log
-# - beast_error.log: Error log
-# - sync.log: Data sync operations

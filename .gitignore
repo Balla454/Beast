@@ -15,3 +15,13 @@ logs/
 # OS / editor
 .DS_Store
 .vscode/
+
+# BeAST specific - large files
+BeAST_Pi_Code/TheBeast/TheBeast/beast/data/
+BeAST_Pi_Code/TheBeast/TheBeast/beast/models/
+BeAST_Pi_Code/TheBeast/TheBeast/beast/logs/
+BeAST_Pi_Code/TheBeast/TheBeast/models/
+*.db
+*.safetensors
+*.onnx
+*.bin
