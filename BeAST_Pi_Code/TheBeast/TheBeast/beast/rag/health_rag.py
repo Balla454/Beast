@@ -726,7 +726,7 @@ beast:"""
                     "options": {
                         "temperature": 0.7,
                         "top_p": 0.9,
-                        "num_predict": 100,  # Max tokens
+                        "num_predict": 250,  # Max tokens - increased for advice responses
                         "stop": ["\n\n", "User:", "Human:"]
                     }
                 },
@@ -766,7 +766,7 @@ beast:"""
             with torch.no_grad():
                 outputs = self.model.generate(
                     inputs.input_ids,
-                    max_new_tokens=80,
+                    max_new_tokens=200,  # Increased for detailed advice responses
                     temperature=0.7,
                     do_sample=True,
                     top_p=0.9,
@@ -789,7 +789,7 @@ beast:"""
         try:
             result = self.generator(
                 prompt,
-                max_new_tokens=60,
+                max_new_tokens=150,  # Increased for detailed responses
                 do_sample=True,
                 temperature=0.7,
                 pad_token_id=50256
