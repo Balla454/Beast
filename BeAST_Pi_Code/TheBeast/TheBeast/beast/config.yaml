@@ -45,7 +45,7 @@ voice:
     engine: "whisper"  # whisper, moonshine, or vosk
     model: "openai/whisper-tiny.en"   # Whisper tiny English model
     language: "en"
-    input_device: null  # null = auto-detect USB mic, or specify device index
+    input_device: null  # null = auto-detect USB mic, or specify device index (e.g., 1)
     
   # Text-to-Speech  
   tts:
@@ -129,3 +129,6 @@ logging:
   file: "logs/beast.log"  # Relative to BEAST_HOME
   max_size_mb: 10
   backup_count: 3
+  # Whether to persist each voice interaction in the local database
+  # Set to true if you want historical transcripts/answers stored
+  log_interactions: false

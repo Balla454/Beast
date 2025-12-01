@@ -90,7 +90,7 @@ SYSTEM_DEPS = {
             "ffmpeg",
             "espeak",
             "espeak-ng",
-            "libatlas-base-dev",
+           # "libatlas-base-dev",
             "libopenblas-dev",
         ]
     }

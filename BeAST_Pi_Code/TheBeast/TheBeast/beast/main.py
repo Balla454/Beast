@@ -137,7 +137,8 @@ class BeASTSystem:
             logger.info("Initializing Wake Word Detection...")
             self.wake_detector = WakeWordDetector(
                 wake_word=self.config['voice']['wake_word'],
-                sensitivity=self.config['voice'].get('wake_word_sensitivity', 0.5)
+                sensitivity=self.config['voice'].get('wake_word_sensitivity', 0.5),
+                input_device=self.config['voice']['stt'].get('input_device', None)
             )
             
             # Initialize Database
@@ -196,6 +197,15 @@ class BeASTSystem:
                         silence_duration=self.config['voice']['audio'].get('silence_duration', 1.5)
                     )
                     
+                    # Close STT stream after recording
+                    if hasattr(self.stt, 'stream') and self.stt.stream:
+                        try:
+                            self.stt.stream.stop_stream()
+                            self.stt.stream.close()
+                            self.stt.stream = None
+                        except Exception as e:
+                            logger.debug(f"Error closing STT stream: {e}")
+                    
                     if audio_data is None or len(audio_data) == 0:
                         logger.warning("No audio recorded")
                         self.announcer.announce("I didn't hear anything. Try again.")
@@ -220,19 +230,14 @@ class BeASTSystem:
                     
                     # Step 5: Speak response
                     self.tts.speak(response)
+                    logger.info("TTS speak() returned")
                     
-                    # Log interaction to database
-                    self.db.log_interaction(question, response)
+                    # Log interaction to database (optional)
+                    if self.config.get('logging', {}).get('log_interactions', False):
+                        self.db.log_interaction(question, response)
                     
-                    # Close all audio resources to release the microphone
-                    if self.stt.audio:
-                        self.stt.audio.terminate()
-                        self.stt.audio = None
-                    
-                    # Also close wake word audio so it can reinitialize fresh
-                    if self.wake_detector.audio:
-                        self.wake_detector.audio.terminate()
-                        self.wake_detector.audio = None
+                    # Wait a moment for TTS to finish and audio to settle
+                    time.sleep(0.5)
                     
                     logger.info("Interaction complete. Returning to listening...")
                     

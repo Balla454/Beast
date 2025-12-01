@@ -26,8 +26,16 @@ logger = logging.getLogger('BeAST.STT')
 
 # Try to import STT engines
 WHISPER_AVAILABLE = False
+FASTER_WHISPER_AVAILABLE = False
 MOONSHINE_AVAILABLE = False
 VOSK_AVAILABLE = False
+
+try:
+    from faster_whisper import WhisperModel
+    FASTER_WHISPER_AVAILABLE = True
+    logger.info("Faster Whisper available")
+except ImportError:
+    logger.warning("faster-whisper not available (pip install faster-whisper)")
 
 try:
     from transformers import pipeline
@@ -106,15 +114,24 @@ class SpeechToText:
         
     def _init_engine(self):
         """Initialize the selected STT engine"""
-        if self.engine == "whisper" and WHISPER_AVAILABLE:
+        if self.engine == "faster-whisper" and FASTER_WHISPER_AVAILABLE:
+            self._init_faster_whisper()
+        elif self.engine == "whisper" and FASTER_WHISPER_AVAILABLE:
+            # Use faster-whisper if available, it's more efficient
+            self.engine = "faster-whisper"  # Update engine name
+            self._init_faster_whisper()
+        elif self.engine == "whisper" and WHISPER_AVAILABLE:
             self._init_whisper()
         elif self.engine == "moonshine" and MOONSHINE_AVAILABLE:
             self._init_moonshine()
         elif self.engine == "vosk" and VOSK_AVAILABLE:
             self._init_vosk()
         else:
-            # Fallback
-            if WHISPER_AVAILABLE:
+            # Fallback priority: faster-whisper > whisper > vosk
+            if FASTER_WHISPER_AVAILABLE:
+                self.engine = "faster-whisper"
+                self._init_faster_whisper()
+            elif WHISPER_AVAILABLE:
                 self.engine = "whisper"
                 self._init_whisper()
             elif VOSK_AVAILABLE:
@@ -122,6 +139,32 @@ class SpeechToText:
                 self._init_vosk()
             else:
                 raise RuntimeError("No STT engine available!")
+    
+    def _init_faster_whisper(self):
+        """Initialize Faster Whisper (optimized for CPU)"""
+        from faster_whisper import WhisperModel
+        
+        # Extract model size from model_name (e.g., "openai/whisper-tiny.en" -> "tiny.en")
+        if "/" in self.model_name:
+            model_size = self.model_name.split("/")[-1].replace("whisper-", "")
+        else:
+            model_size = self.model_name.replace("whisper-", "")
+        
+        logger.info(f"Loading Faster Whisper model: {model_size} (CPU optimized)")
+        
+        try:
+            # Load model with CPU optimizations for Raspberry Pi
+            self._model = WhisperModel(
+                model_size,
+                device="cpu",
+                compute_type="int8",  # Quantized for faster inference on CPU
+                cpu_threads=4,  # Adjust based on Pi CPU cores
+                num_workers=1
+            )
+            logger.info(f"Faster Whisper model '{model_size}' loaded successfully")
+        except Exception as e:
+            logger.error(f"Failed to load Faster Whisper: {e}")
+            raise
                 
     def _init_whisper(self):
         """Initialize Whisper via transformers (offline mode)"""
@@ -229,22 +272,38 @@ class SpeechToText:
                                 self.hardware_chunk_size = self.chunk_size
                                 logger.info(f"  Using direct 16kHz mono (optimal)")
                             elif max_inputs == 1:
-                                # Mono mic - try 16kHz
+                                # Mono mic - try to detect supported sample rate
                                 self.channels = 1
-                                try:
-                                    test_stream = audio.open(
-                                        format=pyaudio.paInt16, channels=1, rate=16000,
-                                        input=True, input_device_index=i,
-                                        frames_per_buffer=512, start=False
-                                    )
-                                    test_stream.close()
-                                    self.hardware_sample_rate = 16000
-                                    self.hardware_chunk_size = self.chunk_size
-                                    logger.info(f"  Using direct 16kHz mono")
-                                except:
-                                    self.hardware_sample_rate = 44100
-                                    self.hardware_chunk_size = int(self.chunk_size * 44100 / 16000)
-                                    logger.info(f"  Using 44100Hz mono with resampling")
+                                # Test common sample rates in order of preference
+                                for test_rate in [16000, 48000, 44100, 32000]:
+                                    try:
+                                        test_stream = audio.open(
+                                            format=pyaudio.paInt16,
+                                            channels=1,
+                                            rate=test_rate,
+                                            input=True,
+                                            input_device_index=i,
+                                            frames_per_buffer=512,
+                                            start=False
+                                        )
+                                        test_stream.close()
+                                        self.hardware_sample_rate = test_rate
+                                        if test_rate == 16000:
+                                            self.hardware_chunk_size = self.chunk_size
+                                            logger.info(f"  Using direct 16kHz mono (no resampling)")
+                                        else:
+                                            self.hardware_chunk_size = int(self.chunk_size * test_rate / 16000)
+                                            logger.info(f"  Using {test_rate}Hz mono with resampling to 16kHz")
+                                        break
+                                    except Exception as e:
+                                        logger.debug(f"  {test_rate}Hz not supported: {e}")
+                                        continue
+                                else:
+                                    # Fallback if no rate worked
+                                    default_rate = int(info.get('defaultSampleRate', 44100))
+                                    self.hardware_sample_rate = default_rate
+                                    self.hardware_chunk_size = int(self.chunk_size * default_rate / 16000)
+                                    logger.info(f"  Using {default_rate}Hz mono with resampling (fallback)")
                             else:
                                 # Stereo mic (like JLAB)
                                 self.channels = 2
@@ -418,7 +477,9 @@ class SpeechToText:
             return None
             
         try:
-            if self.engine == "whisper":
+            if self.engine == "faster-whisper":
+                return self._transcribe_faster_whisper(audio)
+            elif self.engine == "whisper":
                 return self._transcribe_whisper(audio)
             elif self.engine == "moonshine":
                 return self._transcribe_moonshine(audio)
@@ -431,6 +492,41 @@ class SpeechToText:
         except Exception as e:
             logger.error(f"Transcription error: {e}", exc_info=True)
             return None
+    
+    def _transcribe_faster_whisper(self, audio: Union[np.ndarray, str]) -> str:
+        """Transcribe using Faster Whisper (optimized)"""
+        if isinstance(audio, np.ndarray):
+            # Normalize to float32 [-1, 1]
+            if audio.dtype == np.int16:
+                audio = audio.astype(np.float32) / 32768.0
+            
+            # Faster Whisper expects mono audio
+            if len(audio.shape) > 1:
+                audio = audio.mean(axis=1)
+            
+            # Transcribe
+            segments, info = self._model.transcribe(
+                audio,
+                language=self.language if self.language != "en" else None,
+                beam_size=1,  # Faster inference
+                vad_filter=True,  # Voice activity detection
+                vad_parameters=dict(min_silence_duration_ms=500)
+            )
+            
+            # Combine all segments
+            text = " ".join([segment.text for segment in segments]).strip()
+        else:
+            # File path
+            segments, info = self._model.transcribe(
+                audio,
+                language=self.language if self.language != "en" else None,
+                beam_size=1,
+                vad_filter=True
+            )
+            text = " ".join([segment.text for segment in segments]).strip()
+        
+        logger.info(f"Faster Whisper transcription: {text}")
+        return text
             
     def _transcribe_whisper(self, audio: Union[np.ndarray, str]) -> str:
         """Transcribe using Whisper"""

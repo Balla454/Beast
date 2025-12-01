@@ -1,0 +1,16 @@
+[Unit]
+Description=BeAST Synthetic Data Playback
+After=network.target beast-voice.service
+Wants=beast-voice.service
+
+[Service]
+Type=simple
+User=beast4
+WorkingDirectory=/home/beast4/Beast/BeAST_Pi_Code/Live Connections Simulator Test
+Environment="PATH=/home/beast4/.beast-venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/beast4/.beast-venv/bin/python beast_synthetic_playback.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

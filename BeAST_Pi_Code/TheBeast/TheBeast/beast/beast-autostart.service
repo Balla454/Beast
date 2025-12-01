@@ -5,16 +5,16 @@ Wants=sound.target
 
 [Service]
 Type=simple
-User=beast1
-Group=beast1
-WorkingDirectory=/home/beast1/Beast/BeAST_Pi_Code/TheBeast/TheBeast/beast
+User=%u
+Group=%u
+WorkingDirectory=%h/Beast/BeAST_Pi_Code/TheBeast/TheBeast/beast
 
-Environment="PATH=/home/beast1/beast-venv/bin:/usr/local/bin:/usr/bin:/bin"
-Environment="BEAST_HOME=/home/beast1/Beast/BeAST_Pi_Code/TheBeast/TheBeast/beast"
-Environment="VIRTUAL_ENV=/home/beast1/beast-venv"
+Environment="PATH=%h/beast-venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="BEAST_HOME=%h/Beast/BeAST_Pi_Code/TheBeast/TheBeast/beast"
+Environment="VIRTUAL_ENV=%h/beast-venv"
 
 ExecStartPre=/bin/sleep 5
-ExecStart=/home/beast1/beast-venv/bin/python /home/beast1/Beast/BeAST_Pi_Code/TheBeast/TheBeast/beast/main.py
+ExecStart=%h/beast-venv/bin/python %h/Beast/BeAST_Pi_Code/TheBeast/TheBeast/beast/main.py
 
 Restart=on-failure
 RestartSec=10

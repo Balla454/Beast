@@ -244,7 +244,7 @@ class TextToSpeech:
         return text.strip()
         
     def _speak_piper(self, text: str, blocking: bool = True):
-        """Speak using Piper TTS with USB headset output"""
+        """Speak using Piper TTS"""
         # Find model file
         model_file = self._find_piper_model()
         
@@ -254,45 +254,106 @@ class TextToSpeech:
             return
         
         try:
-            # Pipe piper output directly to aplay on USB headset
-            # Piper outputs 22050 Hz mono audio
+            # Generate audio with Piper to a temp file
+            import tempfile
+            import os
+            
+            logger.info("Creating temp file for TTS...")
+            tmp_path = tempfile.mktemp(suffix='.wav')
+            logger.info(f"Temp file: {tmp_path}")
+            
             piper_cmd = [
                 'piper',
                 '--model', str(model_file),
-                '--output-raw'
+                '--output_file', tmp_path
             ]
-            aplay_cmd = ['aplay', '-D', 'plughw:2,0', '-r', '22050', '-f', 'S16_LE', '-c', '1', '-q']
             
-            # Run piper with text input, pipe to aplay
-            piper_proc = subprocess.Popen(
-                piper_cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL
-            )
-            aplay_proc = subprocess.Popen(
-                aplay_cmd,
-                stdin=piper_proc.stdout,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-            piper_proc.stdout.close()
+            logger.info(f"Running piper command: {' '.join(piper_cmd)}")
             
-            # Send text to piper
-            piper_proc.stdin.write(text.encode('utf-8'))
-            piper_proc.stdin.close()
+            # Use subprocess.run instead of Popen for simpler handling
+            try:
+                result = subprocess.run(
+                    piper_cmd,
+                    input=text.encode('utf-8'),
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,
+                    timeout=30
+                )
+                if result.returncode != 0:
+                    logger.warning(f"Piper returned code {result.returncode}: {result.stderr.decode()}")
+            except subprocess.TimeoutExpired:
+                logger.error("Piper generation timed out")
+                raise
             
-            if blocking:
-                aplay_proc.wait(timeout=120)
+            logger.info(f"Speech generated, playing...")
             
-            logger.debug("Piper TTS completed")
+            # Try to play on available devices
+            # Get list of devices
+            import re
+            try:
+                result = subprocess.run(['aplay', '-l'], capture_output=True, text=True, timeout=2)
+                devices = []
+                for line in result.stdout.split('\n'):
+                    match = re.search(r'card (\d+).*device (\d+)', line)
+                    if match:
+                        # Use plughw instead of hw for automatic format conversion
+                        devices.append(f"plughw:{match.group(1)},{match.group(2)}")
+                
+                if not devices:
+                    devices = ['default']
+            except:
+                devices = ['default']
+            
+            logger.info(f"Trying {len(devices)} device(s)")
+            
+            # Try each device until one works
+            played = False
+            for device in devices:
+                try:
+                    logger.info(f"Attempting playback on {device}")
+                    aplay_cmd = ['aplay', '-D', device, '-q', tmp_path]
+                    result = subprocess.run(
+                        aplay_cmd,
+                        timeout=10,
+                        capture_output=True
+                    )
+                    if result.returncode == 0:
+                        logger.info(f"Successfully played on {device}")
+                        played = True
+                        break
+                    else:
+                        logger.info(f"Failed on {device}: {result.stderr}")
+                except subprocess.TimeoutExpired:
+                    logger.warning(f"Timeout playing on {device}")
+                except Exception as e:
+                    logger.info(f"Error playing on {device}: {e}")
+            
+            if not played:
+                logger.warning("Failed to play on any device, trying default")
+                subprocess.run(['aplay', tmp_path], timeout=10)
+            
+            # Cleanup temp file
+            try:
+                os.unlink(tmp_path)
+            except:
+                pass
+            
+            logger.info("Piper TTS completed")
+            return  # Explicit return after successful completion
             
         except subprocess.TimeoutExpired:
             logger.warning("Piper TTS timed out")
+            if 'piper_proc' in locals():
+                try:
+                    piper_proc.kill()
+                except:
+                    pass
+            return
         except Exception as e:
-            logger.error(f"Piper error: {e}")
+            logger.error(f"Piper error: {e}", exc_info=True)
             # Fallback to espeak
             self._speak_espeak(text, blocking)
+            return
                 
     def _find_piper_model(self) -> Optional[Path]:
         """Find Piper model file"""
@@ -334,16 +395,36 @@ class TextToSpeech:
         
     def _speak_espeak(self, text: str, blocking: bool = True):
         """Speak using eSpeak with ALSA device selection"""
-        # USB headset requires stereo output, espeak outputs mono
-        # Use sox to convert mono to stereo, or use plughw for auto-conversion
-        
         try:
-            # Method 1: Use plughw which auto-converts formats
+            # Use default device from ~/.asoundrc (multi_out)
             espeak_cmd = ['espeak', '-v', 'en', '-s', str(int(150 * self.rate)), '--stdout', text]
-            # plughw:2,0 provides automatic format conversion (mono->stereo, sample rate)
-            aplay_cmd = ['aplay', '-D', 'plughw:2,0']
+            aplay_cmd = ['aplay']
             
             # Run espeak and pipe to aplay
+            espeak_proc = subprocess.Popen(
+                espeak_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL
+            )
+            aplay_proc = subprocess.Popen(
+                aplay_cmd,
+                stdin=espeak_proc.stdout,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            espeak_proc.stdout.close()
+            
+            if blocking:
+                aplay_proc.wait(timeout=30)
+            
+        except subprocess.TimeoutExpired:
+            logger.warning("eSpeak TTS timed out")
+            aplay_proc.kill()
+            espeak_proc.kill()
+        except Exception as e:
+            logger.error(f"eSpeak error: {e}")
+            # Final fallback to system TTS
+            self._speak_system(text, blocking)
             espeak_proc = subprocess.Popen(espeak_cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
             aplay_proc = subprocess.Popen(aplay_cmd, stdin=espeak_proc.stdout, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
             espeak_proc.stdout.close()

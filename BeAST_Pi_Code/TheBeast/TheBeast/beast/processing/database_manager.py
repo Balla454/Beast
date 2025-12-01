@@ -341,7 +341,34 @@ class DatabaseManager:
             conn = self._get_connection()
             cursor = conn.cursor()
             
-            # Get calculated metrics
+            # First try to get data from sensor_data table (synthetic playback)
+            try:
+                # Get latest PPG data for heart rate
+                cursor.execute("""
+                    SELECT sensor_data, timestamp FROM sensor_data
+                    WHERE sensor_type = 'ppg'
+                    ORDER BY timestamp DESC
+                    LIMIT 1
+                """)
+                ppg_row = cursor.fetchone()
+                
+                if ppg_row:
+                    # Parse the sensor_data JSON to extract heart rate
+                    import json
+                    sensor_data = json.loads(ppg_row['sensor_data'])
+                    # PPG data format: [hr_bpm, spo2_pct, ...]
+                    heart_rate = sensor_data[0] if len(sensor_data) > 0 else None
+                    spo2 = sensor_data[1] if len(sensor_data) > 1 else None
+                    
+                    return {
+                        'heart_rate': heart_rate,
+                        'spo2': spo2,
+                        'timestamp': ppg_row['timestamp']
+                    }
+            except Exception as e:
+                logger.debug(f"No synthetic sensor_data available: {e}")
+            
+            # Fallback: Get calculated metrics
             cursor.execute("""
                 SELECT * FROM calculated_metrics
                 ORDER BY timestamp DESC
@@ -407,6 +434,7 @@ class DatabaseManager:
                        response_time_ms: int = None,
                        session_id: str = None):
         """Log a voice interaction"""
+        logger.debug("Logging interaction to database...")
         with self._lock:
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -430,7 +458,7 @@ class DatabaseManager:
             ))
             
             conn.commit()
-            logger.debug(f"Logged interaction: {query[:50]}...")
+            logger.debug("Interaction logged successfully")
             
     def get_recent_interactions(self, limit: int = 10) -> List[Dict[str, Any]]:
         """Get recent voice interactions"""

@@ -31,8 +31,13 @@ apt install -y triggerhappy evtest zip
 # -----------------------------------------------------------------------------
 echo ""
 echo "[2/6] Creating scripts directory..."
-mkdir -p /home/beast4/scripts
-mkdir -p /home/beast4/data
+
+# Get the actual username (not root)
+ACTUAL_USER="${SUDO_USER:-$USER}"
+USER_HOME=$(eval echo ~$ACTUAL_USER)
+
+mkdir -p "$USER_HOME/scripts"
+mkdir -p "$USER_HOME/data"
 
 # -----------------------------------------------------------------------------
 # Step 3: Copy the backup script
@@ -42,14 +47,14 @@ echo "[3/6] Installing backup script..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ -f "$SCRIPT_DIR/scripts/zip.sh" ]; then
-    cp "$SCRIPT_DIR/scripts/zip.sh" /home/beast4/scripts/zip.sh
+    cp "$SCRIPT_DIR/scripts/zip.sh" "$USER_HOME/scripts/zip.sh"
 else
-    cat > /home/beast4/scripts/zip.sh << 'SCRIPT'
+    cat > "$USER_HOME/scripts/zip.sh" << SCRIPT
 #!/bin/bash
 
-SOURCE_DIR="/home/beast4/data"
+SOURCE_DIR="$USER_HOME/data"
 ZIP_NAME="data_backup"
-LOCAL_OUTPUT_DIR="/home/beast4"
+LOCAL_OUTPUT_DIR="$USER_HOME"
 REMOTE_USER="jason"
 REMOTE_HOST="fedora.local"
 REMOTE_PATH="/home/jason/backups"
@@ -57,8 +62,8 @@ MAX_BACKUPS=3      # Keep only the last 3 local backups
 
 set -e
 
-TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
-LOG_FILE="/home/beast4/backup.log"
+TIMESTAMP=\$(date +"%Y-%m-%d_%H-%M-%S")
+LOG_FILE="$USER_HOME/backup.log"
 
 echo "$(date): Starting backup..." >> "$LOG_FILE"
 
@@ -69,12 +74,12 @@ fi
 
 ZIP_FILE="$LOCAL_OUTPUT_DIR/${ZIP_NAME}_${TIMESTAMP}.zip"
 
-echo "Creating zip: $ZIP_FILE" >> "$LOG_FILE"
-cd "$SOURCE_DIR"
-zip -r "$ZIP_FILE" ./* >> "$LOG_FILE" 2>&1
+echo "Creating zip: \$ZIP_FILE" >> "\$LOG_FILE"
+cd "\$SOURCE_DIR"
+zip -r "\$ZIP_FILE" ./* >> "\$LOG_FILE" 2>&1
 
-# Ensure pi owns it
-chown beast4:beast4 "$ZIP_FILE"
+# Ensure user owns it
+chown $ACTUAL_USER:$ACTUAL_USER "\$ZIP_FILE"
 
 echo "Creating remote directory..." >> "$LOG_FILE"
 ssh "$REMOTE_USER@$REMOTE_HOST" "mkdir -p $REMOTE_PATH"
@@ -109,8 +114,8 @@ sudo shutdown now
 SCRIPT
 fi
 
-chmod +x /home/beast4/scripts/zip.sh
-chown beast4:beast4 /home/beast4/scripts/zip.sh
+chmod +x "$USER_HOME/scripts/zip.sh"
+chown "$ACTUAL_USER:$ACTUAL_USER" "$USER_HOME/scripts/zip.sh"
 
 # -----------------------------------------------------------------------------
 # Step 4: Configure logind.conf to ignore power button
@@ -144,8 +149,8 @@ fi
 echo ""
 echo "[5/6] Configuring triggerhappy..."
 
-cat > /etc/triggerhappy/triggers.d/power-backup.conf << 'TRIGGER'
-KEY_POWER 1 sudo -u pi /home/beast4/scripts/zip.sh
+cat > /etc/triggerhappy/triggers.d/power-backup.conf << TRIGGER
+KEY_POWER 1 sudo -u $ACTUAL_USER $USER_HOME/scripts/zip.sh
 TRIGGER
 
 # Restart triggerhappy service
@@ -158,17 +163,17 @@ echo ""
 echo "[6/6] Configuring sudo permissions..."
 
 # Add sudoers entry for triggerhappy (thd runs as nobody)
-SUDOERS_LINE="nobody ALL=(beast4) NOPASSWD: /home/beast4/scripts/zip.sh"
+SUDOERS_LINE="nobody ALL=($ACTUAL_USER) NOPASSWD: $USER_HOME/scripts/zip.sh"
 
 if ! grep -q "$SUDOERS_LINE" /etc/sudoers.d/power-backup 2>/dev/null; then
     echo "$SUDOERS_LINE" > /etc/sudoers.d/power-backup
     chmod 440 /etc/sudoers.d/power-backup
 fi
 
-# Also allow pi user to shutdown without password
-PI_SHUTDOWN="beast4 ALL=(ALL) NOPASSWD: /sbin/shutdown"
-if ! grep -q "$PI_SHUTDOWN" /etc/sudoers.d/power-backup 2>/dev/null; then
-    echo "$PI_SHUTDOWN" >> /etc/sudoers.d/power-backup
+# Also allow user to shutdown without password
+USER_SHUTDOWN="$ACTUAL_USER ALL=(ALL) NOPASSWD: /sbin/shutdown"
+if ! grep -q "$USER_SHUTDOWN" /etc/sudoers.d/power-backup 2>/dev/null; then
+    echo "$USER_SHUTDOWN" >> /etc/sudoers.d/power-backup
 fi
 
 # -----------------------------------------------------------------------------
@@ -181,7 +186,7 @@ echo "=========================================="
 echo ""
 echo "IMPORTANT: You still need to set up SSH keys for remote backup:"
 echo ""
-echo "  1. Generate SSH key (as pi user):"
+echo "  1. Generate SSH key (as $ACTUAL_USER user):"
 echo "     ssh-keygen -t ed25519"
 echo ""
 echo "  2. Copy key to remote server:"
@@ -191,13 +196,13 @@ echo "  3. Test the connection:"
 echo "     ssh ${REMOTE_USER:-jason}@${REMOTE_HOST:-fedora.local}"
 echo ""
 echo "  4. Make sure the data directory exists:"
-echo "     mkdir -p /home/pi/data"
+echo "     mkdir -p $USER_HOME/data"
 echo ""
 echo "  5. Reboot to apply logind changes:"
 echo "     sudo reboot"
 echo ""
 echo "After reboot, pressing the power button will:"
-echo "  - Backup /home/pi/data to a zip file"
+echo "  - Backup $USER_HOME/data to a zip file"
 echo "  - Copy the backup to the remote server"
 echo "  - Clean up old local backups (keeping last 3)"
 echo "  - Shutdown the Pi"

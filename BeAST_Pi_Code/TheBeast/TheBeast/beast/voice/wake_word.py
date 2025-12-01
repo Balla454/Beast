@@ -66,7 +66,8 @@ class WakeWordDetector:
     def __init__(self, 
                  wake_word: str = "beast",
                  sensitivity: float = 0.5,
-                 engine: str = "auto"):
+                 engine: str = "auto",
+                 input_device: int = None):
         """
         Initialize wake word detector.
         
@@ -74,13 +75,14 @@ class WakeWordDetector:
             wake_word: The word to listen for
             sensitivity: Detection sensitivity (0.0-1.0)
             engine: "porcupine", "vosk", "simple", or "auto"
+            input_device: Audio input device index (None = auto-detect)
         """
         self.wake_word = wake_word.lower()
         self.sensitivity = sensitivity
         self.running = False
         self.audio = None
         self.stream = None
-        self.input_device = None  # Will be auto-detected
+        self.input_device = input_device  # Can be explicitly set or will be auto-detected
         
         # Audio parameters (defaults, will be updated by _find_usb_microphone)
         self.sample_rate = 16000  # Target sample rate for processing
@@ -89,8 +91,12 @@ class WakeWordDetector:
         self.frame_length = 512  # ~32ms at 16kHz
         self.hardware_frame_length = self.frame_length  # Will be adjusted if resampling needed
         
-        # Find USB microphone and detect its capabilities
-        self._find_usb_microphone()
+        # Find USB microphone and detect its capabilities (only if not explicitly set)
+        if self.input_device is None:
+            self._find_usb_microphone()
+        else:
+            # Device explicitly set - detect its capabilities
+            self._detect_device_capabilities(self.input_device)
         
         # Select engine
         if engine == "auto":
@@ -221,27 +227,37 @@ class WakeWordDetector:
                                 self.hardware_frame_length = self.frame_length
                                 logger.info(f"  Using direct 16kHz mono (no resampling needed)")
                             elif max_inputs == 1:
-                                # Mono mic - try 16kHz first
+                                # Mono mic - try to detect supported sample rate
                                 self.channels = 1
-                                # Test if 16kHz is supported
-                                try:
-                                    test_stream = audio.open(
-                                        format=pyaudio.paInt16,
-                                        channels=1,
-                                        rate=16000,
-                                        input=True,
-                                        input_device_index=i,
-                                        frames_per_buffer=512,
-                                        start=False
-                                    )
-                                    test_stream.close()
-                                    self.hardware_sample_rate = 16000
-                                    self.hardware_frame_length = self.frame_length
-                                    logger.info(f"  Using direct 16kHz mono")
-                                except:
-                                    self.hardware_sample_rate = 44100
-                                    self.hardware_frame_length = int(self.frame_length * 44100 / 16000)
-                                    logger.info(f"  Using 44100Hz mono with resampling")
+                                # Test common sample rates in order of preference
+                                for test_rate in [16000, 48000, 44100, 32000]:
+                                    try:
+                                        test_stream = audio.open(
+                                            format=pyaudio.paInt16,
+                                            channels=1,
+                                            rate=test_rate,
+                                            input=True,
+                                            input_device_index=i,
+                                            frames_per_buffer=512,
+                                            start=False
+                                        )
+                                        test_stream.close()
+                                        self.hardware_sample_rate = test_rate
+                                        if test_rate == 16000:
+                                            self.hardware_frame_length = self.frame_length
+                                            logger.info(f"  Using direct 16kHz mono (no resampling)")
+                                        else:
+                                            self.hardware_frame_length = int(self.frame_length * test_rate / 16000)
+                                            logger.info(f"  Using {test_rate}Hz mono with resampling to 16kHz")
+                                        break
+                                    except Exception as e:
+                                        logger.debug(f"  {test_rate}Hz not supported: {e}")
+                                        continue
+                                else:
+                                    # Fallback if no rate worked
+                                    self.hardware_sample_rate = default_rate
+                                    self.hardware_frame_length = int(self.frame_length * default_rate / 16000)
+                                    logger.info(f"  Using {default_rate}Hz mono with resampling (fallback)")
                             else:
                                 # Stereo mic (like JLAB)
                                 self.channels = 2
@@ -259,6 +275,61 @@ class WakeWordDetector:
             logger.warning("No USB microphone found, using default")
         except Exception as e:
             logger.error(f"Error scanning audio devices: {e}")
+    
+    def _detect_device_capabilities(self, device_index: int):
+        """Detect capabilities of a specific audio device"""
+        if not PYAUDIO_AVAILABLE:
+            return
+        
+        try:
+            audio = pyaudio.PyAudio()
+            info = audio.get_device_info_by_index(device_index)
+            name = info.get('name', 'Unknown')
+            max_inputs = info.get('maxInputChannels', 0)
+            default_rate = int(info.get('defaultSampleRate', 44100))
+            
+            logger.info(f"Using device {device_index}: '{name}' ({max_inputs}ch, {default_rate}Hz)")
+            
+            if max_inputs == 0:
+                logger.warning(f"Device {device_index} has no input channels!")
+                audio.terminate()
+                return
+            
+            self.channels = min(max_inputs, 1)  # Use mono if available
+            
+            # Test common sample rates
+            for test_rate in [16000, 48000, 44100, 32000]:
+                try:
+                    test_stream = audio.open(
+                        format=pyaudio.paInt16,
+                        channels=self.channels,
+                        rate=test_rate,
+                        input=True,
+                        input_device_index=device_index,
+                        frames_per_buffer=512,
+                        start=False
+                    )
+                    test_stream.close()
+                    self.hardware_sample_rate = test_rate
+                    if test_rate == 16000:
+                        self.hardware_frame_length = self.frame_length
+                        logger.info(f"  Using {test_rate}Hz (no resampling needed)")
+                    else:
+                        self.hardware_frame_length = int(self.frame_length * test_rate / 16000)
+                        logger.info(f"  Using {test_rate}Hz with resampling to 16kHz")
+                    break
+                except Exception as e:
+                    logger.debug(f"  {test_rate}Hz not supported: {e}")
+                    continue
+            else:
+                # Fallback
+                self.hardware_sample_rate = default_rate
+                self.hardware_frame_length = int(self.frame_length * default_rate / 16000)
+                logger.info(f"  Using {default_rate}Hz (fallback)")
+            
+            audio.terminate()
+        except Exception as e:
+            logger.error(f"Error detecting device capabilities: {e}")
         
     def _init_audio(self):
         """Initialize PyAudio stream"""
