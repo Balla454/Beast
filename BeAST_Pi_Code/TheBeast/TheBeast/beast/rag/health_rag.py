@@ -1381,6 +1381,38 @@ BeAST:"""
         hr_min = health_data.get('hr_min_1h')
         hr_max = health_data.get('hr_max_1h')
         
+        # Try to get statistics from database if not in health_data
+        if self.database and not hr_avg:
+            # Check for average/highest/lowest queries and compute from sensor_data
+            import re
+            time_match = re.search(r'(over|last|past)\s+(?:the\s+)?(?:course\s+of\s+)?(?:an?\s+)?(\d+)?\s*(hour|minute)', query_lower)
+            
+            if time_match or 'average' in query_lower or 'highest' in query_lower or 'lowest' in query_lower:
+                # Default to 60 minutes
+                minutes = 60
+                if time_match:
+                    time_unit = time_match.group(3)
+                    time_value = time_match.group(2)
+                    if time_value:
+                        minutes = int(time_value)
+                        if time_unit == 'hour':
+                            minutes *= 60
+                
+                # Get statistics from database
+                stats = self.database.get_sensor_statistics('ppg', minutes=minutes)
+                if stats and 'heart_rate' in stats:
+                    hr_stats = stats['heart_rate']
+                    hr_avg = hr_stats['avg']
+                    hr_min = hr_stats['min']
+                    hr_max = hr_stats['max']
+                    
+                    if 'average' in query_lower:
+                        return f"Your average heart rate over the last {minutes} minutes was {hr_avg:.0f} BPM (range: {hr_min:.0f}-{hr_max:.0f} BPM, {stats['count']} readings)."
+                    elif 'highest' in query_lower:
+                        return f"Your highest heart rate in the last {minutes} minutes was {hr_max:.0f} BPM."
+                    elif 'lowest' in query_lower:
+                        return f"Your lowest heart rate in the last {minutes} minutes was {hr_min:.0f} BPM."
+        
         if 'highest' in query_lower and 'heart' in query_lower:
             if hr_max:
                 return f"Your highest heart rate in the last hour was {hr_max:.0f} BPM."

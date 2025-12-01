@@ -366,6 +366,87 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Failed heart rate query: {e}", exc_info=True)
             return None
+    
+    def get_sensor_statistics(self, sensor_type: str, minutes: int = 60) -> Optional[Dict[str, Any]]:
+        """
+        Get statistical summary of sensor data over a time period.
+        
+        Args:
+            sensor_type: Type of sensor (ppg, temp, etc.)
+            minutes: Time window in minutes (default: 60)
+            
+        Returns:
+            Dict with min, max, avg, count for the sensor data
+        """
+        try:
+            from datetime import timedelta
+            with self._lock:
+                conn = self._get_connection()
+                cursor = conn.cursor()
+                cutoff = datetime.now() - timedelta(minutes=minutes)
+                
+                cursor.execute(
+                    """
+                    SELECT sensor_data, timestamp
+                    FROM sensor_data
+                    WHERE sensor_type=? AND timestamp >= ?
+                    ORDER BY timestamp ASC
+                    """,
+                    (sensor_type, cutoff)
+                )
+                rows = cursor.fetchall()
+                
+                if not rows:
+                    return None
+                
+                # Parse all data points
+                values = []
+                for row in rows:
+                    data = json.loads(row['sensor_data']) if isinstance(row['sensor_data'], str) else row['sensor_data']
+                    if isinstance(data, (list, tuple)) and len(data) > 0:
+                        values.append(data)
+                
+                if not values:
+                    return None
+                
+                result = {
+                    'sensor_type': sensor_type,
+                    'count': len(values),
+                    'time_window_minutes': minutes,
+                    'start_time': rows[0]['timestamp'],
+                    'end_time': rows[-1]['timestamp']
+                }
+                
+                # Calculate stats for each field in the data
+                if sensor_type == 'ppg':
+                    hrs = [v[0] for v in values if len(v) > 0]
+                    spo2s = [v[1] for v in values if len(v) > 1]
+                    if hrs:
+                        result['heart_rate'] = {
+                            'min': min(hrs),
+                            'max': max(hrs),
+                            'avg': sum(hrs) / len(hrs)
+                        }
+                    if spo2s:
+                        result['spo2'] = {
+                            'min': min(spo2s),
+                            'max': max(spo2s),
+                            'avg': sum(spo2s) / len(spo2s)
+                        }
+                elif sensor_type == 'temp':
+                    temps = [v[0] for v in values if len(v) > 0]
+                    if temps:
+                        result['core_temp'] = {
+                            'min': min(temps),
+                            'max': max(temps),
+                            'avg': sum(temps) / len(temps)
+                        }
+                
+                return result
+                
+        except Exception as e:
+            logger.error(f"Failed sensor statistics query: {e}", exc_info=True)
+            return None
             
     # ==================== Metrics Storage ====================
     
