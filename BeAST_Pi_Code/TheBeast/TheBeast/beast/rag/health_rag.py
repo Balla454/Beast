@@ -1852,17 +1852,11 @@ BeAST:"""
                 logger.info(f"Query processed (rule-based) in {elapsed:.2f}s")
                 return response
             
-            # Otherwise use RAG with LLM
-            # Retrieve relevant knowledge
-            knowledge = self._retrieve_knowledge(question)
-            context = " ".join(knowledge)
-            
-            # Generate response
-            response = self._generate_response(question, context, health_data)
-            
+            # Use rule-based handler for all other queries - it's faster and more accurate
+            # than the LLM for health metrics
+            response = self._generate_rule_based(question, "", health_data)
             elapsed = time.time() - start_time
-            logger.info(f"Query processed in {elapsed:.2f}s")
-            
+            logger.info(f"Query processed (rule-based) in {elapsed:.2f}s")
             return response
             
         except Exception as e:
