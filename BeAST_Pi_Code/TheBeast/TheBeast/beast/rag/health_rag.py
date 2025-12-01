@@ -1531,9 +1531,8 @@ beast:"""
                 if 'heart' in query_lower or 'hr' in query_lower or 'pulse' in query_lower:
                     result = self.database.get_sensor_data_at('ppg', minutes_ago=minutes)
                     if result and result.get('heart_rate') is not None:
-                        ts = result.get('timestamp')
                         hr = result['heart_rate']
-                        return f"Your heart rate {minutes} minutes ago was {hr:.0f} BPM (timestamp: {ts})."
+                        return f"Your heart rate {minutes} minutes ago was {hr:.0f} BPM."
                     else:
                         return "I couldn't find a heart rate reading for that time window in the local data."
                 
@@ -1541,9 +1540,8 @@ beast:"""
                 elif 'temp' in query_lower or 'temperature' in query_lower:
                     result = self.database.get_sensor_data_at('temp', minutes_ago=minutes)
                     if result and result.get('core_temp') is not None:
-                        ts = result.get('timestamp')
                         temp = result['core_temp']
-                        return f"Your core temperature {minutes} minutes ago was {temp:.1f}°F (timestamp: {ts})."
+                        return f"Your core temperature {minutes} minutes ago was {temp:.1f} degrees Fahrenheit."
                     else:
                         return "I couldn't find a temperature reading for that time window."
                 
@@ -1551,9 +1549,8 @@ beast:"""
                 elif 'oxygen' in query_lower or 'spo2' in query_lower or 'saturation' in query_lower:
                     result = self.database.get_sensor_data_at('ppg', minutes_ago=minutes)
                     if result and result.get('spo2') is not None:
-                        ts = result.get('timestamp')
                         spo2 = result['spo2']
-                        return f"Your blood oxygen (SpO2) {minutes} minutes ago was {spo2:.0f}% (timestamp: {ts})."
+                        return f"Your blood oxygen saturation {minutes} minutes ago was {spo2:.0f} percent."
                     else:
                         return "I couldn't find an oxygen saturation reading for that time window."
                 
