@@ -515,8 +515,12 @@ class WakeWordDetector:
                     
                     logger.info(f"Whisper wake word transcribed: '{text}'")
                     
-                    if self.wake_word in text:
-                        logger.info(f"Wake word '{self.wake_word}' detected!")
+                    # Check for exact match or common misrecognitions
+                    wake_word_variants = [self.wake_word, "beasts", "bees", "peace", "piece"]
+                    detected = any(variant in text for variant in wake_word_variants)
+                    
+                    if detected:
+                        logger.info(f"Wake word '{self.wake_word}' detected (matched: {text})!")
                         self._audio_buffer = []
                         self._loud_frame_count = 0
                         self._last_check_time = current_time
