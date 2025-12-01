@@ -1,8 +1,8 @@
 #!/bin/bash
 
-SOURCE_DIR="/home/pi/data"
+SOURCE_DIR="/home/beast4/data"
 ZIP_NAME="data_backup"
-LOCAL_OUTPUT_DIR="/home/pi"
+LOCAL_OUTPUT_DIR="/home/beast4"
 REMOTE_USER="jason"
 REMOTE_HOST="fedora.local"
 REMOTE_PATH="/home/jason/backups"
@@ -11,7 +11,7 @@ MAX_BACKUPS=3      # Keep only the last 3 local backups
 set -e
 
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
-LOG_FILE="/home/pi/backup.log"
+LOG_FILE="/home/beast4/backup.log"
 
 echo "$(date): Starting backup..." >> "$LOG_FILE"
 
@@ -27,7 +27,7 @@ cd "$SOURCE_DIR"
 zip -r "$ZIP_FILE" ./* >> "$LOG_FILE" 2>&1
 
 # Ensure pi owns it
-chown pi:pi "$ZIP_FILE"
+chown beast4:beast4 "$ZIP_FILE"
 
 echo "Creating remote directory..." >> "$LOG_FILE"
 ssh "$REMOTE_USER@$REMOTE_HOST" "mkdir -p $REMOTE_PATH"

@@ -31,8 +31,8 @@ apt install -y triggerhappy evtest zip
 # -----------------------------------------------------------------------------
 echo ""
 echo "[2/6] Creating scripts directory..."
-mkdir -p /home/pi/scripts
-mkdir -p /home/pi/data
+mkdir -p /home/beast4/scripts
+mkdir -p /home/beast4/data
 
 # -----------------------------------------------------------------------------
 # Step 3: Copy the backup script
@@ -42,14 +42,14 @@ echo "[3/6] Installing backup script..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ -f "$SCRIPT_DIR/scripts/zip.sh" ]; then
-    cp "$SCRIPT_DIR/scripts/zip.sh" /home/pi/scripts/zip.sh
+    cp "$SCRIPT_DIR/scripts/zip.sh" /home/beast4/scripts/zip.sh
 else
-    cat > /home/pi/scripts/zip.sh << 'SCRIPT'
+    cat > /home/beast4/scripts/zip.sh << 'SCRIPT'
 #!/bin/bash
 
-SOURCE_DIR="/home/pi/data"
+SOURCE_DIR="/home/beast4/data"
 ZIP_NAME="data_backup"
-LOCAL_OUTPUT_DIR="/home/pi"
+LOCAL_OUTPUT_DIR="/home/beast4"
 REMOTE_USER="jason"
 REMOTE_HOST="fedora.local"
 REMOTE_PATH="/home/jason/backups"
@@ -58,7 +58,7 @@ MAX_BACKUPS=3      # Keep only the last 3 local backups
 set -e
 
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
-LOG_FILE="/home/pi/backup.log"
+LOG_FILE="/home/beast4/backup.log"
 
 echo "$(date): Starting backup..." >> "$LOG_FILE"
 
@@ -74,7 +74,7 @@ cd "$SOURCE_DIR"
 zip -r "$ZIP_FILE" ./* >> "$LOG_FILE" 2>&1
 
 # Ensure pi owns it
-chown pi:pi "$ZIP_FILE"
+chown beast4:beast4 "$ZIP_FILE"
 
 echo "Creating remote directory..." >> "$LOG_FILE"
 ssh "$REMOTE_USER@$REMOTE_HOST" "mkdir -p $REMOTE_PATH"
@@ -109,8 +109,8 @@ sudo shutdown now
 SCRIPT
 fi
 
-chmod +x /home/pi/scripts/zip.sh
-chown pi:pi /home/pi/scripts/zip.sh
+chmod +x /home/beast4/scripts/zip.sh
+chown beast4:beast4 /home/beast4/scripts/zip.sh
 
 # -----------------------------------------------------------------------------
 # Step 4: Configure logind.conf to ignore power button
@@ -145,7 +145,7 @@ echo ""
 echo "[5/6] Configuring triggerhappy..."
 
 cat > /etc/triggerhappy/triggers.d/power-backup.conf << 'TRIGGER'
-KEY_POWER 1 sudo -u pi /home/pi/scripts/zip.sh
+KEY_POWER 1 sudo -u pi /home/beast4/scripts/zip.sh
 TRIGGER
 
 # Restart triggerhappy service
@@ -158,7 +158,7 @@ echo ""
 echo "[6/6] Configuring sudo permissions..."
 
 # Add sudoers entry for triggerhappy (thd runs as nobody)
-SUDOERS_LINE="nobody ALL=(pi) NOPASSWD: /home/pi/scripts/zip.sh"
+SUDOERS_LINE="nobody ALL=(beast4) NOPASSWD: /home/beast4/scripts/zip.sh"
 
 if ! grep -q "$SUDOERS_LINE" /etc/sudoers.d/power-backup 2>/dev/null; then
     echo "$SUDOERS_LINE" > /etc/sudoers.d/power-backup
@@ -166,7 +166,7 @@ if ! grep -q "$SUDOERS_LINE" /etc/sudoers.d/power-backup 2>/dev/null; then
 fi
 
 # Also allow pi user to shutdown without password
-PI_SHUTDOWN="pi ALL=(ALL) NOPASSWD: /sbin/shutdown"
+PI_SHUTDOWN="beast4 ALL=(ALL) NOPASSWD: /sbin/shutdown"
 if ! grep -q "$PI_SHUTDOWN" /etc/sudoers.d/power-backup 2>/dev/null; then
     echo "$PI_SHUTDOWN" >> /etc/sudoers.d/power-backup
 fi
