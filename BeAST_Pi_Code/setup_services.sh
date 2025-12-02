@@ -26,6 +26,10 @@ fi
 
 # 1. Create Python virtual environment
 echo "[1/7] Creating Python virtual environment..."
+if [ -d "$BEAST_HOME/.beast-venv" ]; then
+    echo "  - Removing existing virtual environment (not portable)..."
+    rm -rf "$BEAST_HOME/.beast-venv"
+fi
 python3 -m venv "$BEAST_HOME/.beast-venv"
 
 # 2. Install requirements
