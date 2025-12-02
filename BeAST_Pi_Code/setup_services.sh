@@ -4,6 +4,14 @@
 
 set -e  # Exit on error
 
+# Check if running as root - don't do that!
+if [ "$EUID" -eq 0 ]; then
+    echo "ERROR: Do not run this script as root or with sudo!"
+    echo "Run it as your normal user: ./setup_services.sh"
+    echo "The script will use sudo internally when needed."
+    exit 1
+fi
+
 echo "==================================="
 echo "BeAST Service Setup"
 echo "==================================="
@@ -36,7 +44,7 @@ python3 -m venv "$BEAST_HOME/.beast-venv"
 echo "[2/7] Installing Python dependencies..."
 source "$BEAST_HOME/.beast-venv/bin/activate"
 pip install --upgrade pip -q
-pip install -r "$BEAST_DIR/TheBeast/TheBeast/beast/requirements.txt" -q
+pip install -r "$BEAST_DIR/TheBeast/TheBeast/beast/requirements.txt"
 deactivate
 
 # 3. Add user to audio group
