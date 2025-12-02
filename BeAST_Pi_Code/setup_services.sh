@@ -66,27 +66,31 @@ sudo chown -R "$BEAST_USER:$BEAST_USER" "$BEAST_HOME/Beast"
 echo "[5/7] Linking service files..."
 
 # Stop services if they're running (prevents path conflicts)
+sudo systemctl stop beast-voice@$BEAST_USER.service 2>/dev/null || true
 sudo systemctl stop beast-voice.service 2>/dev/null || true
+sudo systemctl stop beast-synthetic@$BEAST_USER.service 2>/dev/null || true
 sudo systemctl stop beast-synthetic.service 2>/dev/null || true
 
 # Remove old service files if they exist (could be copies instead of symlinks)
 sudo rm -f /etc/systemd/system/beast-voice.service
+sudo rm -f /etc/systemd/system/beast-voice@.service
 sudo rm -f /etc/systemd/system/beast-synthetic.service
+sudo rm -f /etc/systemd/system/beast-synthetic@.service
 
-# Create fresh symlinks
-sudo ln -sf "$BEAST_DIR/beast-voice.service" /etc/systemd/system/beast-voice.service
-sudo ln -sf "$BEAST_DIR/beast-synthetic.service" /etc/systemd/system/beast-synthetic.service
+# Create symlinks for template services
+sudo ln -sf "$BEAST_DIR/beast-voice.service" /etc/systemd/system/beast-voice@.service
+sudo ln -sf "$BEAST_DIR/beast-synthetic.service" /etc/systemd/system/beast-synthetic@.service
 
 # 6. Reload systemd and enable services
 echo "[6/7] Enabling services..."
 sudo systemctl daemon-reload
-sudo systemctl enable beast-voice.service
-sudo systemctl enable beast-synthetic.service
+sudo systemctl enable beast-voice@$BEAST_USER.service
+sudo systemctl enable beast-synthetic@$BEAST_USER.service
 
 # 7. Start services
 echo "[7/7] Starting services..."
-sudo systemctl start beast-voice.service
-sudo systemctl start beast-synthetic.service
+sudo systemctl start beast-voice@$BEAST_USER.service
+sudo systemctl start beast-synthetic@$BEAST_USER.service
 
 echo ""
 echo "==================================="
@@ -94,14 +98,14 @@ echo "Setup Complete!"
 echo "==================================="
 echo ""
 echo "Services installed and started:"
-echo "  - beast-voice.service (Voice Assistant)"
-echo "  - beast-synthetic.service (Synthetic Data)"
+echo "  - beast-voice@$BEAST_USER.service (Voice Assistant)"
+echo "  - beast-synthetic@$BEAST_USER.service (Synthetic Data)"
 echo ""
 echo "Check status with:"
-echo "  systemctl status beast-voice.service"
-echo "  systemctl status beast-synthetic.service"
+echo "  systemctl status beast-voice@$BEAST_USER.service"
+echo "  systemctl status beast-synthetic@$BEAST_USER.service"
 echo ""
 echo "View logs with:"
-echo "  journalctl -u beast-voice.service -f"
-echo "  journalctl -u beast-synthetic.service -f"
+echo "  journalctl -u beast-voice@$BEAST_USER.service -f"
+echo "  journalctl -u beast-synthetic@$BEAST_USER.service -f"
 echo ""
