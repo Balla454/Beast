@@ -43,18 +43,11 @@ sudo usermod -aG audio "$BEAST_USER"
 echo "[4/7] Setting file ownership..."
 sudo chown -R "$BEAST_USER:$BEAST_USER" "$BEAST_HOME/Beast"
 
-# 5. Create customized service files
-echo "[5/7] Creating service files..."
+# 5. Copy service files
+echo "[5/7] Installing service files..."
 
-# beast-voice.service
-sed "s|/home/beast4|$BEAST_HOME|g; s|User=beast4|User=$BEAST_USER|g" \
-    "$BEAST_DIR/beast-voice.service" | \
-    sudo tee /etc/systemd/system/beast-voice.service > /dev/null
-
-# beast-synthetic.service
-sed "s|/home/beast4|$BEAST_HOME|g; s|User=beast4|User=$BEAST_USER|g" \
-    "$BEAST_DIR/beast-synthetic.service" | \
-    sudo tee /etc/systemd/system/beast-synthetic.service > /dev/null
+sudo cp "$BEAST_DIR/beast-voice.service" /etc/systemd/system/
+sudo cp "$BEAST_DIR/beast-synthetic.service" /etc/systemd/system/
 
 # 6. Reload systemd and enable services
 echo "[6/7] Enabling services..."

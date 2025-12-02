@@ -5,13 +5,13 @@ Wants=postgresql.service
 
 [Service]
 Type=simple
-User=beast4
-WorkingDirectory=/home/beast4/Beast/BeAST_Pi_Code/TheBeast/TheBeast/beast
-Environment="PATH=/home/beast4/.beast-venv/bin:/usr/local/bin:/usr/bin:/bin"
+User=%u
+WorkingDirectory=%h/Beast/BeAST_Pi_Code/TheBeast/TheBeast/beast
+Environment="PATH=%h/.beast-venv/bin:/usr/local/bin:/usr/bin:/bin"
 Environment="HF_HUB_OFFLINE=1"
 Environment="TRANSFORMERS_OFFLINE=1"
 Environment="BEAST_DB_PASSWORD=beast"
-ExecStart=/home/beast4/.beast-venv/bin/python main.py
+ExecStart=%h/.beast-venv/bin/python main.py
 Restart=on-failure
 RestartSec=5
 
