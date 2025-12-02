@@ -38,6 +38,13 @@ if [ -d "$BEAST_HOME/.beast-venv" ]; then
     echo "  - Removing existing virtual environment (not portable)..."
     rm -rf "$BEAST_HOME/.beast-venv"
 fi
+
+# Clean up any accidentally created root venv
+if [ -d "/root/.beast-venv" ]; then
+    echo "  - Removing incorrect root venv (was run with sudo)..."
+    sudo rm -rf "/root/.beast-venv"
+fi
+
 python3 -m venv "$BEAST_HOME/.beast-venv"
 
 # 2. Install requirements
@@ -58,6 +65,15 @@ sudo chown -R "$BEAST_USER:$BEAST_USER" "$BEAST_HOME/Beast"
 # 5. Symlink service files
 echo "[5/7] Linking service files..."
 
+# Stop services if they're running (prevents path conflicts)
+sudo systemctl stop beast-voice.service 2>/dev/null || true
+sudo systemctl stop beast-synthetic.service 2>/dev/null || true
+
+# Remove old service files if they exist (could be copies instead of symlinks)
+sudo rm -f /etc/systemd/system/beast-voice.service
+sudo rm -f /etc/systemd/system/beast-synthetic.service
+
+# Create fresh symlinks
 sudo ln -sf "$BEAST_DIR/beast-voice.service" /etc/systemd/system/beast-voice.service
 sudo ln -sf "$BEAST_DIR/beast-synthetic.service" /etc/systemd/system/beast-synthetic.service
 
