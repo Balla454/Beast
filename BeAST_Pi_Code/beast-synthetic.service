@@ -1,15 +1,13 @@
 [Unit]
-Description=BeAST Synthetic Data Playback
-After=network.target beast-voice.service
-Wants=beast-voice.service
+Description=BeAST Synthetic Data Service
+After=network.target
 
 [Service]
 Type=simple
-EnvironmentFile=/etc/beast/environment
-User=${BEAST_USER}
-WorkingDirectory=${BEAST_HOME}/Beast/BeAST_Pi_Code/Live Connections Simulator Test
-Environment="PATH=${BEAST_HOME}/.beast-venv/bin:/usr/local/bin:/usr/bin:/bin"
-ExecStart=${BEAST_HOME}/.beast-venv/bin/python beast_synthetic_playback.py
+User=beast4
+WorkingDirectory=/home/beast4/Beast/BeAST_Pi_Code/Live Connections Simulator Test
+Environment="PATH=/home/beast4/.beast-venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/beast4/.beast-venv/bin/python beast_synthetic_playback.py
 Restart=on-failure
 RestartSec=10
 

@@ -6,6 +6,7 @@ set -e  # Exit on error
 # Use the current logged-in user
 CURRENT_USER=$(whoami)
 PROJECT_DIR="/home/$CURRENT_USER/Beast/BeAST_Pi_Code"
+SHARED_VENV="/home/$CURRENT_USER/.beast-venv"
 VENV_DIR="$PROJECT_DIR/venv"
 REQUIREMENTS_FILE="$PROJECT_DIR/requirements.txt"
 WORKING_DIR="$PROJECT_DIR/Live Connections Simulator Test"
@@ -41,15 +42,18 @@ create_venv() {
     else
         echo "Warning: No requirements.txt found at $REQUIREMENTS_FILE"
         echo "Installing minimal dependencies..."
-        pip install pyserial mysql-connector-python
+        pip install pyserial psycopg2-binary
     fi
 }
 
-# Check if virtual environment exists
-if [ ! -d "$VENV_DIR" ]; then
+# Check for shared virtual environment first
+if [ -d "$SHARED_VENV" ]; then
+    echo "Using shared virtual environment at $SHARED_VENV"
+    source "$SHARED_VENV/bin/activate"
+elif [ ! -d "$VENV_DIR" ]; then
     create_venv
 else
-    # Activate existing virtual environment
+    # Activate existing local virtual environment
     source "$VENV_DIR/bin/activate"
     
     # Check if virtual environment is still valid (has pip)

@@ -24,13 +24,14 @@
 2. **Run the Setup Script**
    ```bash
    cd ~/Beast/BeAST_Pi_Code
-   ./setup_services.sh
+   ./install.sh
    ```
    
    This script will:
-   - Remove any existing (non-portable) virtual environment
+   - Install system dependencies (apt)
    - Create a fresh Python virtual environment
-   - Install all dependencies
+   - Install all Python dependencies
+   - Download necessary AI models
    - Configure user permissions
    - Install and start system services
 
