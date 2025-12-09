@@ -49,6 +49,25 @@ sudo apt-get install -y \
     git
 
 # -----------------------------------------------------------------------------
+# 2.5. Ollama Setup
+# -----------------------------------------------------------------------------
+echo "[1.5/6] Installing Ollama..."
+if ! command -v ollama &> /dev/null; then
+    curl -fsSL https://ollama.com/install.sh | sh
+else
+    echo "  - Ollama already installed."
+fi
+
+echo "  - Pulling gemma2:2b model..."
+# Ensure ollama is running before pulling
+if ! pgrep -x "ollama" > /dev/null; then
+    echo "  - Starting Ollama server..."
+    ollama serve > /dev/null 2>&1 &
+    sleep 5
+fi
+ollama pull gemma2:2b
+
+# -----------------------------------------------------------------------------
 # 3. Virtual Environment Setup (Clean Install)
 # -----------------------------------------------------------------------------
 echo "[2/6] Setting up Python virtual environment..."
