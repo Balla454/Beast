@@ -1,10 +1,10 @@
-name: BeAST Unit Tests
+name: BeAST CI
 
 on:
   push:
-    branches: [ "main", "master", "Release" ]
+    branches: [ "main", "master", "Release", "dev" ]
   pull_request:
-    branches: [ "main", "master", "Release" ]
+    branches: [ "main", "master", "Release", "dev" ]
 
 jobs:
   test:
