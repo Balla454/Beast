@@ -59,11 +59,17 @@ echo "[3/7] Adding user to audio group..."
 sudo usermod -aG audio "$BEAST_USER"
 
 # 4. Fix file ownership
-echo "[4/7] Setting file ownership..."
+echo "[4/8] Setting file ownership..."
 sudo chown -R "$BEAST_USER:$BEAST_USER" "$BEAST_HOME/Beast"
 
-# 5. Symlink service files
-echo "[5/7] Linking service files..."
+# 5. Create environment file for services
+echo "[5/8] Creating environment file..."
+sudo mkdir -p /etc/beast
+echo "BEAST_USER=$BEAST_USER" | sudo tee /etc/beast/environment > /dev/null
+echo "BEAST_HOME=$BEAST_HOME" | sudo tee -a /etc/beast/environment > /dev/null
+
+# 6. Symlink service files
+echo "[6/8] Linking service files..."
 
 # Stop services if they're running (prevents path conflicts)
 sudo systemctl stop beast-voice@$BEAST_USER.service 2>/dev/null || true
@@ -78,19 +84,19 @@ sudo rm -f /etc/systemd/system/beast-synthetic.service
 sudo rm -f /etc/systemd/system/beast-synthetic@.service
 
 # Create symlinks for template services
-sudo ln -sf "$BEAST_DIR/beast-voice.service" /etc/systemd/system/beast-voice@.service
-sudo ln -sf "$BEAST_DIR/beast-synthetic.service" /etc/systemd/system/beast-synthetic@.service
+sudo ln -sf "$BEAST_DIR/beast-voice.service" /etc/systemd/system/beast-voice.service
+sudo ln -sf "$BEAST_DIR/beast-synthetic.service" /etc/systemd/system/beast-synthetic.service
 
-# 6. Reload systemd and enable services
-echo "[6/7] Enabling services..."
+# 7. Reload systemd and enable services
+echo "[7/8] Enabling services..."
 sudo systemctl daemon-reload
-sudo systemctl enable beast-voice@$BEAST_USER.service
-sudo systemctl enable beast-synthetic@$BEAST_USER.service
+sudo systemctl enable beast-voice.service
+sudo systemctl enable beast-synthetic.service
 
-# 7. Start services
-echo "[7/7] Starting services..."
-sudo systemctl start beast-voice@$BEAST_USER.service
-sudo systemctl start beast-synthetic@$BEAST_USER.service
+# 8. Start services
+echo "[8/8] Starting services..."
+sudo systemctl start beast-voice.service
+sudo systemctl start beast-synthetic.service
 
 echo ""
 echo "==================================="
@@ -98,14 +104,14 @@ echo "Setup Complete!"
 echo "==================================="
 echo ""
 echo "Services installed and started:"
-echo "  - beast-voice@$BEAST_USER.service (Voice Assistant)"
-echo "  - beast-synthetic@$BEAST_USER.service (Synthetic Data)"
+echo "  - beast-voice.service (Voice Assistant)"
+echo "  - beast-synthetic.service (Synthetic Data)"
 echo ""
 echo "Check status with:"
-echo "  systemctl status beast-voice@$BEAST_USER.service"
-echo "  systemctl status beast-synthetic@$BEAST_USER.service"
+echo "  systemctl status beast-voice.service"
+echo "  systemctl status beast-synthetic.service"
 echo ""
 echo "View logs with:"
-echo "  journalctl -u beast-voice@$BEAST_USER.service -f"
-echo "  journalctl -u beast-synthetic@$BEAST_USER.service -f"
+echo "  journalctl -u beast-voice.service -f"
+echo "  journalctl -u beast-synthetic.service -f"
 echo ""
