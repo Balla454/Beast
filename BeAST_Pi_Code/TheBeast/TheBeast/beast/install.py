@@ -322,8 +322,11 @@ def download_models():
     """Download ML models for offline use."""
     print_step("Downloading ML models...")
     
-    # Create models directory
-    models_dir = Path("models")
+    # Create models directory relative to this script
+    # This ensures models end up in TheBeast/TheBeast/models regardless of CWD
+    base_dir = Path(__file__).parent.parent
+    models_dir = base_dir / "models"
+
     models_dir.mkdir(exist_ok=True)
     (models_dir / "stt").mkdir(exist_ok=True)
     (models_dir / "tts").mkdir(exist_ok=True)
@@ -393,7 +396,43 @@ def download_models():
         print_warning(f"Could not download embedding model: {e}")
     
     # =========================================================================
-    # 4. Check espeak for Piper TTS
+    # 4. Download Piper Voice (en_US-lessac-medium)
+    # =========================================================================
+    print("\n  Downloading Piper voice (en_US-lessac-medium)...")
+    piper_dir = models_dir / "tts"
+    voice_name = "en_US-lessac-medium"
+    onnx_file = piper_dir / f"{voice_name}.onnx"
+    json_file = piper_dir / f"{voice_name}.onnx.json"
+    
+    # URLs for the voice model
+    base_url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium"
+    onnx_url = f"{base_url}/{voice_name}.onnx"
+    json_url = f"{base_url}/{voice_name}.onnx.json"
+    
+    import urllib.request
+    
+    if not onnx_file.exists():
+        print(f"  Downloading {onnx_file.name}...")
+        try:
+            urllib.request.urlretrieve(onnx_url, onnx_file)
+            print_success("Voice model downloaded")
+        except Exception as e:
+            print_warning(f"Failed to download voice model: {e}")
+    else:
+        print_success("Voice model already exists")
+        
+    if not json_file.exists():
+        print(f"  Downloading {json_file.name}...")
+        try:
+            urllib.request.urlretrieve(json_url, json_file)
+            print_success("Voice config downloaded")
+        except Exception as e:
+            print_warning(f"Failed to download voice config: {e}")
+    else:
+        print_success("Voice config already exists")
+
+    # =========================================================================
+    # 5. Check espeak for Piper TTS
     # =========================================================================
     print("\n  Checking espeak (required for Piper TTS)...")
     if check_command_exists("espeak") or check_command_exists("espeak-ng"):
@@ -407,7 +446,7 @@ def download_models():
             print("  Install with: sudo apt install espeak-ng")
     
     # =========================================================================
-    # 5. Check piper-tts
+    # 6. Check piper-tts
     # =========================================================================
     print("\n  Checking Piper TTS...")
     try:
