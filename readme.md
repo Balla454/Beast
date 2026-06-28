@@ -1,93 +1,114 @@
-# BeAST - Biometric Enhancement & Adaptive Sensing Technology
+# BeAST — Biometric Enhancement & Adaptive Sensing Technology
 
-A wearable AI system for the Raspberry Pi that collects and analyzes biometric data from Arduino sensors.
+A wearable AI system built on Raspberry Pi 5. Arduino sensors stream real-time EEG and biometric data into PostgreSQL, where a local voice assistant queries it using RAG. Runs headlessly via systemd across multiple Pi units.
 
-## Project Structure
+---
+
+## System Overview
 
 ```
-Beast/
-├── BeAST_Pi_Code/          # Main Raspberry Pi codebase
-│   ├── beast_session_runner.sh    # Session runner with automatic venv setup
-│   ├── BeAST Schema/              # Database schemas and synthetic data
-│   ├── Live Connections Simulator Test/  # Arduino-to-SQL data collection
-│   ├── TheBeast/                  # Voice assistant and RAG system
-│   └── scripts/                   # Utility scripts (backup, etc.)
+Arduino sensors
+      │  serial
+      ▼
+ beast_arduino_to_sql.py  ──►  PostgreSQL
+                                    │
+                               RAG + FAISS index
+                                    │
+                              Voice Assistant
+                           (wake word → STT → LLM → TTS)
 ```
 
-## Key Features
+**Data flow:** Arduino sends EEG and biometric readings over serial → Python ingests and writes to Postgres → sensor fusion and feature extraction derive cognitive metrics → voice assistant answers queries about your biometric state using a FAISS-indexed RAG over the session data.
 
-- **Arduino Data Collection**: Real-time EEG and biometric data streaming to PostgreSQL
-- **Voice Assistant**: AI-powered voice interface with local models
-- **Database Management**: PostgreSQL with comprehensive schema for sensor data
-- **Automated Backups**: Power button integration for safe shutdown with data backup
-- **Service Management**: Systemd services for automatic startup
+---
 
-## Installation
+## Components
 
-All scripts automatically detect the current user and use relative paths. No hardcoding required!
+### Arduino / Data Collection
+- `BeAST_MultiMode.ino` — multi-mode EEG + biometric sensor firmware
+- `beast_arduino_to_sql.py` — serial reader, writes to PostgreSQL in real time
+- `beast_session_runner.sh` — session entrypoint: auto-creates venv, installs deps, starts collector
 
-### 1. Database Setup
-The database schema is located in `BeAST Schema/beast_schema.sql`
+### Voice Assistant (`TheBeast/TheBeast/beast/`)
+| Module | Role |
+|---|---|
+| `voice/wake_word.py` | Wake word detection |
+| `voice/speech_to_text.py` | faster-whisper (tiny.en, CPU) |
+| `voice/text_to_speech.py` | piper-tts via espeak-ng |
+| `rag/health_rag.py` | FAISS + sentence-transformers over session data |
+| `processing/sensor_interface.py` | Sensor I/O abstraction |
+| `processing/feature_extractor.py` | Raw EEG → feature vectors |
+| `processing/metric_calculator.py` | Cognitive/biometric metric derivation |
+| `processing/database_manager.py` | Postgres read/write |
 
-### 2. Arduino Data Collector
-Run the session runner:
+### Infrastructure
+- **Systemd services** — `beast-arduino.service`, `beast-voice.service`, `beast-autostart.service`
+- **Power button integration** — safe shutdown + automatic data backup on press
+- **Remote backup** — rsync to a central "big database" machine
+
+---
+
+## Setup
+
+### 1. Database
 ```bash
-./beast_session_runner.sh
+psql -U postgres -f BeAST_Pi_Code/BeAST\ Schema/beast_schema.sql
 ```
 
-This script automatically:
-- Detects the current user
-- Creates a virtual environment if needed
-- Installs dependencies
-- Runs the Arduino-to-SQL data collector
-
-### 3. Voice Assistant Setup
-Navigate to `TheBeast/TheBeast/beast/` and run:
+### 2. Arduino data collector
 ```bash
+cd BeAST_Pi_Code
+./beast_session_runner.sh   # handles venv + deps automatically
+```
+
+### 3. Voice assistant
+```bash
+cd BeAST_Pi_Code/TheBeast/TheBeast/beast
 python install.py
 ```
 
-### 4. Power Button Backup (Optional)
-Configure automatic backup on power button press:
+### 4. Systemd services (optional, for headless autostart)
 ```bash
-sudo ./setup_power_button.sh
+./BeAST_Pi_Code/setup_services.sh
 ```
 
-### 5. Remote Backup Server (Optional)
-On the receiving computer:
+### 5. Power button backup (optional)
 ```bash
-sudo ./setup_big_database_computer.sh
+sudo ./BeAST_Pi_Code/setup_power_button.sh
 ```
 
-## Service Files
+### 6. Remote backup server (optional, run on receiving machine)
+```bash
+sudo ./BeAST_Pi_Code/setup_big_database_computer.sh
+```
 
-The project includes systemd service templates that use systemd specifiers for portability:
-- `%u` = current username
-- `%h` = user's home directory
+---
 
-These services will work on any system without modification:
-- `beast-arduino.service` - Arduino data collector
-- `beast-voice.service` - Voice assistant
-- `beast.service` - Main BeAST service (template version)
-- `beast-autostart.service` - Auto-start variant
+## Stack
 
-## Configuration
+| Layer | Tech |
+|---|---|
+| Hardware | Raspberry Pi 5, Arduino (EEG + biometric sensors) |
+| Data ingestion | Python, pyserial, psycopg2 |
+| Database | PostgreSQL |
+| STT | faster-whisper (tiny.en, CPU) |
+| TTS | piper-tts + espeak-ng |
+| RAG | FAISS, sentence-transformers, PyTorch |
+| Services | systemd |
 
-All configuration is user-agnostic and uses environment detection:
-- The session runner automatically finds the project directory
-- Service files use systemd specifiers
-- Setup scripts detect the current user automatically
+---
 
-## Development
+## Multi-Unit Support
 
-### Data Formats
-See `Live Connections Simulator Test/DATA_FORMATS.md` for sensor data formats.
+Designed to run on a fleet (`beast1`–`beast4`). All scripts auto-detect the current user and use relative paths — no hardcoded usernames or paths anywhere. Systemd service files use `%u` / `%h` specifiers for portability.
 
-### Developer Setup
-See `Live Connections Simulator Test/DEVELOPER_SETUP.md` for development environment setup.
+---
 
-## Notes
+## Dev / Simulation
 
-- The system was designed to run on multiple Raspberry Pi units (beast1, beast2, beast3, beast4, etc.)
-- All scripts now auto-detect the current user and adapt paths accordingly
-- No hardcoded usernames or paths in the main codebase
+No hardware? Use the synthetic data playback:
+```bash
+python BeAST_Pi_Code/Live\ Connections\ Simulator\ Test/beast_synthetic_playback.py
+```
+
+See `Live Connections Simulator Test/DATA_FORMATS.md` for sensor data schemas and `DEVELOPER_SETUP.md` for full dev environment setup.
